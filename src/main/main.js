@@ -31,6 +31,18 @@ function createWindow() {
     autoHideMenuBar: true
   });
 
+  mainWindow.on('enter-full-screen', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('fullscreen-change', true);
+    }
+  });
+
+  mainWindow.on('leave-full-screen', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('fullscreen-change', false);
+    }
+  });
+
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 }
 
@@ -156,4 +168,17 @@ ipcMain.handle('create-demo-library', async () => {
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+// IPC Handler: Full Screen Experience (FSE)
+ipcMain.handle('toggle-fullscreen', () => {
+  if (!mainWindow) return false;
+  const next = !mainWindow.isFullScreen();
+  mainWindow.setFullScreen(next);
+  return next;
+});
+
+ipcMain.handle('get-fullscreen-state', () => {
+  if (!mainWindow) return false;
+  return mainWindow.isFullScreen();
 });

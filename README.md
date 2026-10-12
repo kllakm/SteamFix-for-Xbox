@@ -5,8 +5,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-00E575.svg?style=flat-square" alt="Version 1.1.1" />
+  <img src="https://img.shields.io/badge/version-1.2.0-00E575.svg?style=flat-square" alt="Version 1.2.0" />
   <img src="https://img.shields.io/badge/platform-Windows-107C10.svg?style=flat-square" alt="Platform Windows" />
+  <img src="https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square" alt="Controller Supported" />
   <img src="https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Handheld%20Ready-1A9FFF.svg?style=flat-square" alt="Handheld Ready" />
   <img src="https://img.shields.io/badge/framework-Electron%20%2B%20Node.js-1A9FFF.svg?style=flat-square" alt="Electron + Node.js" />
   <img src="https://img.shields.io/badge/license-MIT-64748B.svg?style=flat-square" alt="License MIT" />
@@ -114,6 +115,21 @@ XboxSteamBridge strictly enforces the mandatory workflow rules defined in [PROJE
 ---
 
 ## ## Changelog
+
+### [v1.2.0] - 2026-10-12
+- **Full Windows Controller & Gamepad Navigation Engine:**
+  - Standard Xbox controller D-pad and left analog stick spatial navigation across cards, tabs, and action controls.
+  - Dedicated gamepad shortcuts: `[A]` Select / Toggle, `[B]` Back / Close Modals, `[X]` Toggle Select All, `[Y]` Instant Scan, `[LB/RB]` Cycle Tabs, `[Menu]` Toggle FSE, `[View]` Safety Backups.
+  - Automatic controller detection: activates when buttons or thumbsticks are moved while the application is in focus.
+  - Seamless desktop fallback: moving the mouse or touching the screen instantly disables controller mode and restores mouse interaction.
+  - Automatic mouse cursor hiding: cursor is completely hidden over the application while controller navigation is active.
+- **Xbox Halo Selection Glow:**
+  - Vibrant Xbox green halo outline and glowing border on the actively focused interactive element in gamepad mode.
+- **Controller Helper Hints HUD Layer:**
+  - Floating, frosted-capsule HUD in the bottom right corner showing color-coded Xbox button badges (`A`, `B`, `X`, `Y`, `LB/RB`, `☰`).
+  - Dynamically displays only when a controller is detected, actively being used, and the app has focus.
+- **Full Screen Experience (FSE) Mode:**
+  - Added dedicated topbar `FSE` toggle button and `F11` keyboard / controller `Menu` shortcut for true borderless fullscreen gaming experience on handheld displays (ROG Ally, Legion Go).
 
 ### [v1.1.1] - 2026-10-12
 - **Responsive Layout & Crop Prevention:**

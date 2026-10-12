@@ -11,6 +11,13 @@ contextBridge.exposeInMainWorld('api', {
   restoreBackup: (backupPath) => ipcRenderer.invoke('restore-backup', backupPath),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   createDemoLibrary: () => ipcRenderer.invoke('create-demo-library'),
+  toggleFullscreen: () => ipcRenderer.invoke('toggle-fullscreen'),
+  getFullscreenState: () => ipcRenderer.invoke('get-fullscreen-state'),
+  onFullscreenChange: (callback) => {
+    const handler = (_event, isFullScreen) => callback(isFullScreen);
+    ipcRenderer.on('fullscreen-change', handler);
+    return () => ipcRenderer.removeListener('fullscreen-change', handler);
+  },
   onSyncProgress: (callback) => {
     const handler = (_event, data) => callback(data);
     ipcRenderer.on('sync-progress', handler);

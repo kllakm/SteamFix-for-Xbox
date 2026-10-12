@@ -22,7 +22,7 @@
           <h1 class="brand-title">XboxSteamBridge</h1>
           <span class="brand-tagline">ROG Ally & PC Handheld Touch Edition</span>
         </div>
-        <div class="semver-badge" id="semverBadge">v1.1.1</div>
+        <div class="semver-badge" id="semverBadge">v1.2.0</div>
       </div>
 
       <div class="topbar-actions">
@@ -36,6 +36,13 @@
         <button class="btn btn-secondary btn-touch" id="btnBackups" title="Manage safety database backups">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
           <span>Backups</span>
+        </button>
+
+        <button class="btn btn-secondary btn-touch btn-fse" id="btnToggleFse" title="Toggle Full Screen Experience (FSE)">
+          <svg class="icon fse-icon" id="fseIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+          <span id="fseBtnLabel">FSE</span>
         </button>
 
         <button class="btn btn-primary btn-touch" id="btnScan">
@@ -256,6 +263,18 @@
       </div>
     </div>
   </div>
+
+  <!-- Controller Navigation Helper HUD Layer (Floating Bottom Right) -->
+  <aside class="controller-hints-hud" id="controllerHintsHud" aria-live="polite">
+    <div class="hud-capsule">
+      <span class="hud-item"><span class="btn-badge btn-a">A</span> Select</span>
+      <span class="hud-item"><span class="btn-badge btn-b">B</span> Back</span>
+      <span class="hud-item"><span class="btn-badge btn-x">X</span> Select All</span>
+      <span class="hud-item"><span class="btn-badge btn-y">Y</span> Scan</span>
+      <span class="hud-item"><span class="btn-badge btn-bumper">LB / RB</span> Tabs</span>
+      <span class="hud-item"><span class="btn-badge btn-menu">☰</span> FSE</span>
+    </div>
+  </aside>
 
   <script src="app.js"></script>
 </body>

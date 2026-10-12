@@ -1,6 +1,6 @@
 // State
 let appState = {
-  version: '1.1.1',
+  version: '1.2.0',
   currentTab: 'missing',
   steamRoots: [],
   libraries: [],
@@ -66,6 +66,7 @@ const backupsList = document.getElementById('backupsList');
 // Initialize
 window.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
+  controllerNav.init();
   await loadVersion();
   await checkProcesses();
   await triggerScan();
@@ -202,6 +203,48 @@ function setupEventListeners() {
       consoleDrawer.classList.toggle('collapsed');
     });
   }
+
+  // FSE Fullscreen Experience Toggle
+  const btnToggleFse = document.getElementById('btnToggleFse');
+  const fseBtnLabel = document.getElementById('fseBtnLabel');
+  const fseIcon = document.getElementById('fseIcon');
+
+  const updateFseState = (isFull) => {
+    if (fseBtnLabel) fseBtnLabel.textContent = isFull ? 'Exit FSE' : 'FSE';
+    if (btnToggleFse) {
+      if (isFull) {
+        btnToggleFse.classList.add('fse-active');
+        btnToggleFse.title = 'Exit Full Screen Experience (FSE)';
+        fseIcon.innerHTML = '<path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M4 10h6m0 0V4m0 6L3 3m17 7h-6m0 0V4m0 6l7-7"/>';
+      } else {
+        btnToggleFse.classList.remove('fse-active');
+        btnToggleFse.title = 'Enter Full Screen Experience (FSE)';
+        fseIcon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>';
+      }
+    }
+  };
+
+  if (btnToggleFse) {
+    btnToggleFse.addEventListener('click', async () => {
+      const isFull = await window.api.toggleFullscreen();
+      updateFseState(isFull);
+    });
+  }
+
+  // Handle IPC and keyboard F11
+  window.api.onFullscreenChange(isFull => {
+    updateFseState(isFull);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F11') {
+      e.preventDefault();
+      window.api.toggleFullscreen().then(updateFseState);
+    }
+  });
+
+  // Query initial fullscreen state
+  window.api.getFullscreenState().then(updateFseState);
 
   // Listen to IPC sync progress events
   window.api.onSyncProgress(data => {
@@ -557,6 +600,17 @@ function renderCards() {
 
     gamesContainer.appendChild(card);
   });
+
+  // If controller mode is active, maintain active focus glow
+  if (typeof controllerNav !== 'undefined' && controllerNav.isActive) {
+    setTimeout(() => {
+      if (!controllerNav.focusedEl || !document.body.contains(controllerNav.focusedEl)) {
+        controllerNav.focusFirstAvailable();
+      } else {
+        controllerNav.applyFocus(controllerNav.focusedEl);
+      }
+    }, 40);
+  }
 }
 
 function renderXboxCards(xboxGames) {
@@ -594,6 +648,16 @@ function renderXboxCards(xboxGames) {
 
     gamesContainer.appendChild(card);
   });
+
+  if (typeof controllerNav !== 'undefined' && controllerNav.isActive) {
+    setTimeout(() => {
+      if (!controllerNav.focusedEl || !document.body.contains(controllerNav.focusedEl)) {
+        controllerNav.focusFirstAvailable();
+      } else {
+        controllerNav.applyFocus(controllerNav.focusedEl);
+      }
+    }, 40);
+  }
 }
 
 function renderEmptyState() {
@@ -613,3 +677,340 @@ function renderEmptyState() {
   `;
   gamesContainer.appendChild(empty);
 }
+
+// ============================================================================
+// Controller & Gamepad Navigation Engine (Windows & Handheld Touch PCs)
+// ============================================================================
+const controllerNav = {
+  isActive: false,
+  focusedEl: null,
+  lastActionTime: 0,
+  repeatDelay: 190, // ms debounce between directional presses
+  prevButtons: new Map(),
+
+  init() {
+    this.hintsHud = document.getElementById('controllerHintsHud');
+
+    // Mouse movement turns off controller mode and restores cursor
+    window.addEventListener('mousemove', (e) => {
+      if (e.movementX !== 0 || e.movementY !== 0) {
+        if (this.isActive) {
+          this.deactivate();
+        }
+      }
+    });
+
+    // Touch interaction turns off controller mode
+    window.addEventListener('touchstart', () => {
+      if (this.isActive) {
+        this.deactivate();
+      }
+    }, { passive: true });
+
+    // Gamepad connection events
+    window.addEventListener('gamepadconnected', (e) => {
+      logConsole(`[Controller] Connected: ${e.gamepad.id}`, 'info');
+    });
+
+    window.addEventListener('gamepaddisconnected', (e) => {
+      logConsole(`[Controller] Disconnected: ${e.gamepad.id}`, 'warn');
+      if (this.isActive) this.deactivate();
+    });
+
+    // Start 60fps polling loop
+    requestAnimationFrame(this.poll.bind(this));
+  },
+
+  activate() {
+    this.isActive = true;
+    document.body.classList.add('gamepad-mode');
+    if (this.hintsHud) {
+      this.hintsHud.style.display = 'block';
+      void this.hintsHud.offsetWidth; // Force reflow for CSS transition
+      this.hintsHud.classList.add('visible');
+    }
+
+    if (!this.focusedEl || !document.body.contains(this.focusedEl)) {
+      this.focusFirstAvailable();
+    } else {
+      this.applyFocus(this.focusedEl);
+    }
+  },
+
+  deactivate() {
+    this.isActive = false;
+    document.body.classList.remove('gamepad-mode');
+    if (this.hintsHud) {
+      this.hintsHud.classList.remove('visible');
+      setTimeout(() => {
+        if (!this.isActive && this.hintsHud) this.hintsHud.style.display = 'none';
+      }, 250);
+    }
+    if (this.focusedEl) {
+      this.focusedEl.classList.remove('gamepad-focused');
+    }
+  },
+
+  poll(timestamp) {
+    requestAnimationFrame(this.poll.bind(this));
+
+    // Only process if app is in focus
+    if (!document.hasFocus()) return;
+
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let activePad = null;
+    for (let i = 0; i < gamepads.length; i++) {
+      if (gamepads[i] && gamepads[i].connected) {
+        activePad = gamepads[i];
+        break;
+      }
+    }
+
+    if (!activePad) return;
+
+    // Detect any input to wake up controller mode
+    let hasAnyInput = false;
+    for (let b = 0; b < activePad.buttons.length; b++) {
+      if (activePad.buttons[b].pressed) {
+        hasAnyInput = true;
+        break;
+      }
+    }
+    if (!hasAnyInput) {
+      if (Math.abs(activePad.axes[0] || 0) > 0.35 || Math.abs(activePad.axes[1] || 0) > 0.35) {
+        hasAnyInput = true;
+      }
+    }
+
+    if (hasAnyInput && !this.isActive) {
+      this.activate();
+    }
+
+    if (!this.isActive) return;
+
+    // Read buttons (Edge triggered)
+    const isButtonPressed = (btnIndex) => {
+      const isDown = !!(activePad.buttons[btnIndex] && activePad.buttons[btnIndex].pressed);
+      const wasDown = !!this.prevButtons.get(btnIndex);
+      this.prevButtons.set(btnIndex, isDown);
+      return isDown && !wasDown;
+    };
+
+    // Read D-pad
+    const dpadUp = isButtonPressed(12);
+    const dpadDown = isButtonPressed(13);
+    const dpadLeft = isButtonPressed(14);
+    const dpadRight = isButtonPressed(15);
+
+    // Read Left Stick with repeat delay
+    const axisX = activePad.axes[0] || 0;
+    const axisY = activePad.axes[1] || 0;
+    const now = timestamp;
+    const canRepeat = (now - this.lastActionTime) > this.repeatDelay;
+
+    let moveLeft = dpadLeft || (canRepeat && axisX < -0.45);
+    let moveRight = dpadRight || (canRepeat && axisX > 0.45);
+    let moveUp = dpadUp || (canRepeat && axisY < -0.45);
+    let moveDown = dpadDown || (canRepeat && axisY > 0.45);
+
+    if (moveLeft || moveRight || moveUp || moveDown) {
+      this.lastActionTime = now;
+      if (moveLeft) this.navigateDirection('left');
+      else if (moveRight) this.navigateDirection('right');
+      else if (moveUp) this.navigateDirection('up');
+      else if (moveDown) this.navigateDirection('down');
+    }
+
+    // Action buttons
+    if (isButtonPressed(0)) { // A button: Select / Toggle
+      this.handleButtonA();
+    }
+    if (isButtonPressed(1)) { // B button: Back / Close modal
+      this.handleButtonB();
+    }
+    if (isButtonPressed(2)) { // X button: Toggle Select All
+      this.handleButtonX();
+    }
+    if (isButtonPressed(3)) { // Y button: Scan Now
+      this.handleButtonY();
+    }
+    if (isButtonPressed(4)) { // LB: Previous Tab
+      this.switchTab(-1);
+    }
+    if (isButtonPressed(5)) { // RB: Next Tab
+      this.switchTab(1);
+    }
+    if (isButtonPressed(9)) { // Start / Menu: Toggle FSE
+      const btnToggleFse = document.getElementById('btnToggleFse');
+      if (btnToggleFse) btnToggleFse.click();
+    }
+    if (isButtonPressed(8)) { // Select / View: Backups
+      btnBackups.click();
+    }
+  },
+
+  getFocusableElements() {
+    // Check if modal is active
+    if (confirmModal && confirmModal.style.display === 'flex') {
+      return [btnCancelSync, btnProceedSync];
+    }
+    if (backupsModal && backupsModal.style.display === 'flex') {
+      const restores = Array.from(backupsModal.querySelectorAll('.btn-restore'));
+      return [btnCloseBackups, ...restores];
+    }
+
+    const elements = [];
+
+    // Header buttons
+    const fse = document.getElementById('btnToggleFse');
+    if (btnKillXbox && btnKillXbox.style.display !== 'none') elements.push(btnKillXbox);
+    if (btnBackups) elements.push(btnBackups);
+    if (fse) elements.push(fse);
+    if (btnScan) elements.push(btnScan);
+
+    // Tabs
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    elements.push(...tabs);
+
+    // Action Command Bar
+    if (appState.currentTab === 'missing') {
+      elements.push(selectAllCheckbox);
+    }
+    if (btnAddFolder) elements.push(btnAddFolder);
+    if (btnDemoFixture) elements.push(btnDemoFixture);
+    if (btnSync && !btnSync.disabled) elements.push(btnSync);
+
+    // Game Cards
+    const cards = Array.from(document.querySelectorAll('.game-card'));
+    elements.push(...cards);
+
+    return elements.filter(el => el && el.offsetParent !== null);
+  },
+
+  focusFirstAvailable() {
+    const list = this.getFocusableElements();
+    if (list.length > 0) {
+      const activeTab = document.querySelector('.tab-btn.active');
+      const firstCard = document.querySelector('.game-card');
+      const target = firstCard || activeTab || list[0];
+      this.applyFocus(target);
+    }
+  },
+
+  applyFocus(el) {
+    if (!el) return;
+    if (this.focusedEl && this.focusedEl !== el) {
+      this.focusedEl.classList.remove('gamepad-focused');
+    }
+    this.focusedEl = el;
+    el.classList.add('gamepad-focused');
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  },
+
+  navigateDirection(dir) {
+    const items = this.getFocusableElements();
+    if (items.length === 0) return;
+
+    if (!this.focusedEl || !items.includes(this.focusedEl)) {
+      this.focusFirstAvailable();
+      return;
+    }
+
+    const currentIdx = items.indexOf(this.focusedEl);
+
+    if (dir === 'right') {
+      const nextIdx = (currentIdx + 1) % items.length;
+      this.applyFocus(items[nextIdx]);
+    } else if (dir === 'left') {
+      const prevIdx = (currentIdx - 1 + items.length) % items.length;
+      this.applyFocus(items[prevIdx]);
+    } else if (dir === 'down') {
+      const cards = Array.from(document.querySelectorAll('.game-card'));
+      if (cards.includes(this.focusedEl)) {
+        const container = document.getElementById('gamesContainer');
+        const colWidth = (cards[0] && cards[0].offsetWidth) ? cards[0].offsetWidth + 18 : 320;
+        const cols = Math.max(1, Math.floor((container ? container.offsetWidth : 900) / colWidth));
+        const cardIdx = cards.indexOf(this.focusedEl);
+        const targetCardIdx = cardIdx + cols;
+        if (targetCardIdx < cards.length) {
+          this.applyFocus(cards[targetCardIdx]);
+          return;
+        }
+      }
+      const nextIdx = Math.min(items.length - 1, currentIdx + 1);
+      this.applyFocus(items[nextIdx]);
+    } else if (dir === 'up') {
+      const cards = Array.from(document.querySelectorAll('.game-card'));
+      if (cards.includes(this.focusedEl)) {
+        const container = document.getElementById('gamesContainer');
+        const colWidth = (cards[0] && cards[0].offsetWidth) ? cards[0].offsetWidth + 18 : 320;
+        const cols = Math.max(1, Math.floor((container ? container.offsetWidth : 900) / colWidth));
+        const cardIdx = cards.indexOf(this.focusedEl);
+        const targetCardIdx = cardIdx - cols;
+        if (targetCardIdx >= 0) {
+          this.applyFocus(cards[targetCardIdx]);
+          return;
+        } else {
+          const syncBtn = document.getElementById('btnSync');
+          const activeTab = document.querySelector('.tab-btn.active');
+          this.applyFocus(syncBtn || activeTab || items[0]);
+          return;
+        }
+      }
+      const prevIdx = Math.max(0, currentIdx - 1);
+      this.applyFocus(items[prevIdx]);
+    }
+  },
+
+  handleButtonA() {
+    if (!this.focusedEl) return;
+    if (this.focusedEl.classList.contains('game-card')) {
+      this.focusedEl.click();
+    } else if (this.focusedEl.tagName === 'INPUT' && this.focusedEl.type === 'checkbox') {
+      this.focusedEl.click();
+    } else {
+      this.focusedEl.click();
+    }
+  },
+
+  handleButtonB() {
+    if (confirmModal && confirmModal.style.display === 'flex') {
+      btnCancelSync.click();
+      return;
+    }
+    if (backupsModal && backupsModal.style.display === 'flex') {
+      btnCloseBackups.click();
+      return;
+    }
+    if (consoleDrawer && !consoleDrawer.classList.contains('collapsed')) {
+      consoleDrawer.classList.add('collapsed');
+      return;
+    }
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab) this.applyFocus(activeTab);
+  },
+
+  handleButtonX() {
+    if (appState.currentTab === 'missing') {
+      selectAllCheckbox.click();
+    }
+  },
+
+  handleButtonY() {
+    btnScan.click();
+  },
+
+  switchTab(direction) {
+    const tabs = ['missing', 'synced', 'all', 'xbox'];
+    const currentIdx = tabs.indexOf(appState.currentTab);
+    const nextIdx = (currentIdx + direction + tabs.length) % tabs.length;
+    const nextTab = tabs[nextIdx];
+    const targetBtn = document.querySelector(`.tab-btn[data-tab="${nextTab}"]`);
+    if (targetBtn) {
+      targetBtn.click();
+      this.applyFocus(targetBtn);
+    }
+  }
+};
+

@@ -1233,3 +1233,141 @@ html, body {
     justify-content: flex-end;
   }
 }
+
+/* ==========================================================================
+   Gamepad / Controller Navigation System & Selection Glow
+   ========================================================================== */
+
+/* Hide mouse cursor over the entire application while controller is active */
+body.gamepad-mode,
+body.gamepad-mode * {
+  cursor: none !important;
+}
+
+/* Active Gamepad Focus Selection Glow (Xbox Halo Glow) */
+body.gamepad-mode .gamepad-focused,
+body.gamepad-mode *:focus-visible {
+  outline: 3px solid var(--xbox-accent) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 24px rgba(0, 229, 117, 0.75), inset 0 0 10px rgba(0, 229, 117, 0.25) !important;
+  transform: scale(1.02) !important;
+  z-index: 15 !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, outline 0.12s ease !important;
+}
+
+body.gamepad-mode .game-card.gamepad-focused {
+  border-color: var(--xbox-accent) !important;
+  background: var(--bg-card-hover) !important;
+}
+
+/* FSE Button States */
+.btn-fse {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn-fse.fse-active {
+  background: rgba(0, 229, 117, 0.15);
+  border-color: rgba(0, 229, 117, 0.5);
+  color: var(--xbox-accent);
+}
+
+/* ==========================================================================
+   Controller Helper Hints HUD Layer (Floating Bottom Right)
+   ========================================================================== */
+.controller-hints-hud {
+  position: fixed;
+  right: 28px;
+  bottom: 42px;
+  z-index: 99;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.controller-hints-hud.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.hud-capsule {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 18px;
+  background: rgba(8, 12, 22, 0.94);
+  border: 1px solid rgba(0, 229, 117, 0.4);
+  border-radius: 9999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), 0 0 16px rgba(0, 229, 117, 0.2);
+  backdrop-filter: blur(16px);
+}
+
+.hud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
+}
+
+/* Authentic Xbox Controller Button Badges */
+.btn-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 0.72rem;
+  line-height: 1;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.btn-a {
+  background: #107c10;
+  color: #ffffff;
+  border: 1px solid #22c55e;
+}
+
+.btn-b {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #ef4444;
+}
+
+.btn-x {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #3b82f6;
+}
+
+.btn-y {
+  background: #d97706;
+  color: #ffffff;
+  border: 1px solid #f59e0b;
+}
+
+.btn-bumper {
+  border-radius: 6px;
+  width: auto;
+  padding: 2px 7px;
+  height: 20px;
+  background: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  font-size: 0.68rem;
+}
+
+.btn-menu {
+  border-radius: 6px;
+  width: 20px;
+  height: 20px;
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+
