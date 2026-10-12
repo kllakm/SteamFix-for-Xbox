@@ -47,6 +47,10 @@ const processLabel = document.getElementById('processLabel');
 const btnKillXbox = document.getElementById('btnKillXbox');
 const consoleLogs = document.getElementById('consoleLogs');
 const btnClearLog = document.getElementById('btnClearLog');
+const consoleDrawer = document.getElementById('consoleDrawer');
+const drawerHeader = document.getElementById('drawerHeader');
+const drawerPreviewText = document.getElementById('drawerPreviewText');
+const searchClearBtn = document.getElementById('searchClearBtn');
 
 // Modal Elements
 const confirmModal = document.getElementById('confirmModal');
@@ -83,8 +87,20 @@ function setupEventListeners() {
   // Search input
   searchInput.addEventListener('input', (e) => {
     appState.searchQuery = e.target.value.toLowerCase().trim();
+    if (searchClearBtn) {
+      searchClearBtn.style.display = appState.searchQuery ? 'block' : 'none';
+    }
     render();
   });
+
+  if (searchClearBtn) {
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      appState.searchQuery = '';
+      searchClearBtn.style.display = 'none';
+      render();
+    });
+  }
 
   // Scan Button
   btnScan.addEventListener('click', () => triggerScan());
@@ -174,9 +190,18 @@ function setupEventListeners() {
   });
 
   // Clear log
-  btnClearLog.addEventListener('click', () => {
+  btnClearLog.addEventListener('click', (e) => {
+    e.stopPropagation();
     consoleLogs.innerHTML = '';
   });
+
+  // Collapsible Console Drawer (Handheld Touch optimization)
+  if (drawerHeader && consoleDrawer) {
+    drawerHeader.addEventListener('click', (e) => {
+      if (e.target.closest('#btnClearLog')) return;
+      consoleDrawer.classList.toggle('collapsed');
+    });
+  }
 
   // Listen to IPC sync progress events
   window.api.onSyncProgress(data => {
@@ -329,6 +354,10 @@ function logConsole(message, type = 'info') {
   entry.textContent = `[${timestamp}] ${message}`;
   consoleLogs.appendChild(entry);
   consoleLogs.scrollTop = consoleLogs.scrollHeight;
+
+  if (drawerPreviewText) {
+    drawerPreviewText.textContent = `[${timestamp}] ${message}`;
+  }
 }
 
 // Backups Modal Manager
@@ -500,9 +529,11 @@ function renderCards() {
     `;
 
     if (isMissingTab) {
+      card.classList.add('touch-interactive');
       const checkbox = card.querySelector('.card-checkbox');
-      checkbox.addEventListener('change', (e) => {
-        if (e.target.checked) {
+
+      const toggleSelection = (shouldSelect) => {
+        if (shouldSelect) {
           appState.selectedAppIds.add(game.appid);
           card.classList.add('selected');
         } else {
@@ -510,8 +541,20 @@ function renderCards() {
           card.classList.remove('selected');
         }
         renderSelectionState();
-        btnSync.disabled = getSelectedMissingGames().length === 0;
-        syncBtnLabel.textContent = `Sync ${getSelectedMissingGames().length} to Xbox`;
+        const selCount = getSelectedMissingGames().length;
+        btnSync.disabled = selCount === 0;
+        syncBtnLabel.textContent = selCount > 0 ? `Sync ${selCount} to Xbox` : 'Sync to Xbox App';
+      };
+
+      checkbox.addEventListener('change', (e) => {
+        toggleSelection(e.target.checked);
+      });
+
+      // Handheld touch optimization: Tap anywhere on the card to toggle selection!
+      card.addEventListener('click', (e) => {
+        if (e.target.classList.contains('card-checkbox')) return;
+        checkbox.checked = !checkbox.checked;
+        toggleSelection(checkbox.checked);
       });
     }
 

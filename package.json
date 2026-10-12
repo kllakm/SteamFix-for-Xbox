@@ -1,7 +1,7 @@
 {
   "name": "xbox-steam-bridge",
   "productName": "XboxSteamBridge",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Seamlessly integrates local Steam libraries with PC Xbox App, deduplicating titles and injecting Steam launch URIs and CDN grid artwork.",
   "main": "src/main/main.js",
   "scripts": {
@@ -15,7 +15,9 @@
     "gaming",
     "library-sync",
     "windows",
-    "electron"
+    "electron",
+    "rog-ally",
+    "handheld"
   ],
   "author": "XboxSteamBridge Contributors",
   "license": "MIT",
@@ -27,6 +29,7 @@
       "buildResources": "build"
     },
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "portable",
@@ -50,6 +53,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "artifactName": "XboxSteamBridge-Setup.exe"
     }
   },

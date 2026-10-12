@@ -5,8 +5,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-00E575.svg?style=flat-square" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/version-1.1.0-00E575.svg?style=flat-square" alt="Version 1.1.0" />
   <img src="https://img.shields.io/badge/platform-Windows-107C10.svg?style=flat-square" alt="Platform Windows" />
+  <img src="https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Handheld%20Ready-1A9FFF.svg?style=flat-square" alt="Handheld Ready" />
   <img src="https://img.shields.io/badge/framework-Electron%20%2B%20Node.js-1A9FFF.svg?style=flat-square" alt="Electron + Node.js" />
   <img src="https://img.shields.io/badge/license-MIT-64748B.svg?style=flat-square" alt="License MIT" />
 </p>
@@ -23,31 +24,33 @@ The modern PC Xbox App (`Microsoft.GamingApp`) is designed to aggregate your PC 
 - High-definition Steam CDN grid artwork (`https://cdn.cloudflare.steamstatic.com/steam/apps/<appid>/header.jpg` and `library_600x900_2x.jpg`)
 - Intelligent deduplication against native Xbox and existing sideloaded titles
 - Automated safety backups (`.bak`) and one-click rollback protection
+- **ROG Ally & Handheld PC Touch Optimization:** Generous touch targets (44px-48px+), whole-card tap selection, high-contrast readable typography, and collapsible diagnostics drawer.
+- **Unified Brand Identity:** Bespoke high-resolution icon artwork consistently utilized across installer, portable executable, window titlebar, and in-app header.
 
 ---
 
 ## ✨ Key Features
 
+- **ROG Ally & Handheld Touch Optimization:**
+  - Designed specifically for 7-inch handheld screens (ROG Ally, Legion Go, Steam Deck running Windows).
+  - Whole-surface tap selection for game cards—no precision checkbox tapping required.
+  - Generous 44px-48px touch targets across tabs, buttons, inputs, and modals.
+  - Less busy, decluttered status ribbon and collapsible live activity drawer to maximize game browsing view.
+- **Unified High-Definition App Icon & Identity:**
+  - High-quality Xbox emerald and Steam cyan fusion emblem embedded across the app.
+  - Multi-resolution Windows ICO (256x256 down to 16x16) for `XboxSteamBridge.exe`, NSIS installer package, portable binary, and titlebar.
 - **Automated Steam Library Discovery:**
   - Discovers Steam installation paths via Windows Registry (`HKCU\Software\Valve\Steam`, `HKLM\SOFTWARE\Valve\Steam`, `HKLM\SOFTWARE\WOW6432Node\Valve\Steam`) and fallback drives.
   - Automatically parses `libraryfolders.vdf` to discover all mounted Steam library drives (D:, E:, G:, etc.).
   - Reads and extracts `appmanifest_<id>.acf` to capture `appid`, `name`, `installdir`, and primary executable.
   - Allows manual addition of custom Steam library folders.
-
 - **Deep Xbox App State Inspection & Deduplication:**
   - Reads `CustomLibraryManagement.manifest`, `ThirdPartyLibraries\CustomLibraryManagement\CustomLibraryManagement.manifest`, and `AsyncCache.db`.
   - Rigorously deduplicates against existing Xbox entries using App IDs, normalized title matching (stripping punctuation/trademarks), and executable binaries.
-
 - **Process Safety & Automated Backups:**
   - Detects if `XboxPcApp.exe` or background services are active and handles graceful closure to release SQLite/file locks.
   - Automatically generates timestamped backups (`.bak`) in `%LOCALAPPDATA%\Packages\Microsoft.GamingApp_8wekyb3d8bbwe\LocalState\XboxSteamBridge_Backups` before writing.
   - Provides a built-in **Backup & Rollback Manager** to revert changes at any time.
-
-- **Modern Desktop Dashboard:**
-  - Real-time statistics: Total Steam Games, Registered Xbox Games, Missing vs Synced counts.
-  - Filterable tabs: *Missing from Xbox*, *Already Synced*, *All Steam Games*, and *Xbox Library*.
-  - Live activity and diagnostic terminal drawer.
-  - Dynamic SemVer badge synchronization in titlebar and footer.
 
 ---
 
@@ -110,6 +113,19 @@ XboxSteamBridge strictly enforces the mandatory workflow rules defined in [PROJE
 ---
 
 ## ## Changelog
+
+### [v1.1.0] - 2026-10-12
+- **ROG Ally & Handheld Touch Optimization:**
+  - Decluttered layout: replaced crowded multi-card rows with an expansive Handheld Status Ribbon.
+  - Whole-card touch selection: tapping anywhere on a missing game card now toggles selection instantly for thumb navigation.
+  - Increased base typography to 15px/16px and enlarged headings/badges for handheld display legibility.
+  - Standardized all buttons, inputs, tabs, and checkboxes to minimum 44px-48px touch targets.
+  - Implemented collapsible live diagnostics drawer to maximize screen estate for game browsing.
+  - Added instant search clear button and touch response animations.
+- **Unified High-Definition App Branding:**
+  - Created and integrated a bespoke Xbox & Steam fusion emblem with neon green and cyan glow accents.
+  - Generated multi-resolution Windows `.ico` asset (256x256, 128x128, 64x64, 48x48, 32x32, 16x16).
+  - Uniform icon applied across NSIS Windows installer, portable executable, window titlebar, and in-app UI header.
 
 ### [v1.0.0] - 2026-10-12
 - **Initial Release:** Complete desktop application implementation for Windows.

@@ -11,13 +11,18 @@ const { createMockSteamLibrary } = require('./fixtureGenerator');
 let mainWindow = null;
 
 function createWindow() {
+  const iconPath = process.platform === 'win32'
+    ? path.join(__dirname, '../../build/icon.ico')
+    : path.join(__dirname, '../renderer/assets/logo.png');
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 840,
-    minWidth: 1024,
-    minHeight: 700,
+    minWidth: 800,
+    minHeight: 540,
     title: `XboxSteamBridge v${packageJson.version}`,
     backgroundColor: '#0a0e17',
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
