@@ -1,6 +1,6 @@
 /* ==========================================================================
    XboxSteamBridge - Console / Game UI Experience
-   Clean, Spacious, Cinematic Handheld & Desktop Aesthetic
+   Clean, Spacious, Uncramped Handheld & Desktop Aesthetic
    ========================================================================== */
 
 :root {
@@ -10,7 +10,7 @@
   --bg-card: rgba(17, 25, 42, 0.85);
   --bg-card-hover: rgba(26, 38, 64, 0.95);
   --bg-card-selected: rgba(16, 124, 16, 0.16);
-  --bg-glass: rgba(11, 16, 28, 0.82);
+  --bg-glass: rgba(11, 16, 28, 0.85);
   --bg-glass-modal: rgba(8, 12, 20, 0.94);
 
   /* Subtle Borders */
@@ -100,14 +100,16 @@ body.gamepad-active {
 }
 
 /* ==========================================================================
-   1. Console Navigation Header (Clean, Spacious, Horizon Bar)
+   1. Tier 1: System Topbar (Horizon Header)
+   Clean, Spacious, Uncrowded
    ========================================================================== */
-.console-header {
-  height: 74px;
+.console-topbar {
+  height: 60px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 36px;
+  padding: 0 32px;
   background: var(--bg-glass);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-subtle);
@@ -115,24 +117,19 @@ body.gamepad-active {
   flex-shrink: 0;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-}
-
 .brand-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .console-logo {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-md);
   object-fit: cover;
-  box-shadow: 0 0 20px rgba(0, 229, 117, 0.3);
+  box-shadow: 0 0 16px rgba(0, 229, 117, 0.3);
   border: 1px solid rgba(0, 229, 117, 0.35);
   flex-shrink: 0;
 }
@@ -141,15 +138,17 @@ body.gamepad-active {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .console-title {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  white-space: nowrap;
 }
 
 .console-badge {
@@ -161,97 +160,41 @@ body.gamepad-active {
   background: rgba(0, 229, 117, 0.12);
   color: var(--xbox-emerald);
   border: 1px solid rgba(0, 229, 117, 0.3);
+  white-space: nowrap;
 }
 
-/* Primary Console Tabs (Horizontal Navigation) */
-.console-tabs {
+.topbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
+  flex-shrink: 0;
 }
 
-.nav-tab {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-family: var(--font-main);
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 10px 18px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all var(--transition-fast);
-  min-height: var(--touch-target-min);
-  outline: none;
-}
-
-.nav-tab:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.nav-tab.active {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
-}
-
-.nav-tab.active::after {
-  content: '';
-  display: block;
-  width: 18px;
-  height: 2px;
-  background: var(--xbox-emerald);
-  position: absolute;
-  bottom: -4px;
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 8px var(--xbox-emerald);
-}
-
-.tab-count {
-  font-family: var(--font-code);
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-}
-
-.nav-tab.active .tab-count {
-  background: rgba(0, 229, 117, 0.2);
-  color: var(--xbox-emerald);
-}
-
-/* Header Right: Process & Utilities */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
+/* Process Indicator Pill */
 .status-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
+  padding: 6px 14px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
+  min-width: 8px;
+  min-height: 8px;
   border-radius: 50%;
   background: var(--xbox-emerald);
   box-shadow: 0 0 8px var(--xbox-emerald);
+  flex-shrink: 0;
 }
 
 .status-dot.running {
@@ -275,6 +218,7 @@ body.gamepad-active {
   border-radius: var(--radius-sm);
   cursor: pointer;
   margin-left: 4px;
+  white-space: nowrap;
   transition: all var(--transition-fast);
 }
 
@@ -287,10 +231,89 @@ body.gamepad-active {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 /* ==========================================================================
-   2. Console Action Buttons (Tactile, Roomy, Clean)
+   2. Tier 2: Dedicated Console Navigation Strip (Clean Horizon Tabs)
+   Never cramped, never squished
+   ========================================================================== */
+.console-nav-strip {
+  display: flex;
+  align-items: center;
+  padding: 8px 32px;
+  background: rgba(10, 15, 26, 0.65);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 15;
+  flex-shrink: 0;
+}
+
+.console-tabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.console-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 9px 20px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all var(--transition-fast);
+  min-height: var(--touch-target-min);
+  outline: none;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+}
+
+.nav-tab .tab-label {
+  white-space: nowrap !important;
+}
+
+.nav-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-tab.active {
+  color: #ffffff;
+  background: rgba(0, 229, 117, 0.12);
+  border-color: rgba(0, 229, 117, 0.45);
+  box-shadow: 0 2px 14px rgba(0, 229, 117, 0.2);
+}
+
+.tab-count {
+  font-family: var(--font-code);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.nav-tab.active .tab-count {
+  background: rgba(0, 229, 117, 0.25);
+  color: var(--xbox-emerald);
+}
+
+/* ==========================================================================
+   3. Console Action Buttons (Tactile, Roomy, Clean)
    ========================================================================== */
 .console-btn {
   display: inline-flex;
@@ -307,7 +330,8 @@ body.gamepad-active {
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
-  white-space: nowrap;
+  white-space: nowrap !important;
+  flex-shrink: 0;
   outline: none;
 }
 
@@ -376,6 +400,7 @@ body.gamepad-active {
   width: 20px;
   height: 20px;
   stroke: #031508;
+  flex-shrink: 0;
 }
 
 .spin-icon.spinning {
@@ -387,7 +412,7 @@ body.gamepad-active {
 }
 
 /* ==========================================================================
-   3. Main Workspace & Contextual Action Bar
+   4. Main Workspace & Contextual Action Bar
    ========================================================================== */
 .console-main {
   flex: 1;
@@ -401,15 +426,17 @@ body.gamepad-active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 36px 14px 36px;
-  gap: 20px;
+  padding: 14px 32px;
+  gap: 16px;
+  flex-wrap: wrap;
   flex-shrink: 0;
 }
 
 .action-bar-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  flex-shrink: 0;
 }
 
 .selection-pill {
@@ -420,16 +447,20 @@ body.gamepad-active {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 .console-checkbox-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--text-primary);
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 .console-checkbox-label input[type="checkbox"] {
@@ -437,8 +468,10 @@ body.gamepad-active {
 }
 
 .custom-checkbox {
-  width: 22px;
-  height: 22px;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
   border-radius: 6px;
   border: 2px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.05);
@@ -446,6 +479,7 @@ body.gamepad-active {
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
+  flex-shrink: 0 !important;
 }
 
 .console-checkbox-label input[type="checkbox"]:checked + .custom-checkbox {
@@ -465,18 +499,22 @@ body.gamepad-active {
 
 .selection-divider {
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .selection-note {
   font-size: 0.85rem;
   color: var(--text-secondary);
   font-weight: 500;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 .action-bar-right {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* Console Search Bar */
@@ -484,12 +522,13 @@ body.gamepad-active {
   position: relative;
   display: flex;
   align-items: center;
-  width: 250px;
+  width: 230px;
   transition: width var(--transition-fast);
+  flex-shrink: 1;
 }
 
 .console-search:focus-within {
-  width: 310px;
+  width: 280px;
 }
 
 .search-svg {
@@ -537,13 +576,13 @@ body.gamepad-active {
 }
 
 /* ==========================================================================
-   4. Games Showcase Grid (Spacious, Roomy, 16:9 Cinematic Cards)
+   5. Games Showcase Grid (Spacious, Roomy, 16:9 Cinematic Cards)
    ========================================================================== */
 .games-showcase {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 10px 36px 36px 36px;
+  padding: 10px 32px 32px 32px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 22px;
@@ -613,7 +652,7 @@ body.gamepad-active {
 .card-header-art {
   position: relative;
   width: 100%;
-  aspect-ratio: 460 / 215; /* Authentic Steam header ratio */
+  aspect-ratio: 460 / 215;
   background: #060910;
   overflow: hidden;
 }
@@ -666,6 +705,7 @@ body.gamepad-active {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   backdrop-filter: blur(8px);
+  white-space: nowrap;
 }
 
 .pill-missing {
@@ -712,6 +752,7 @@ body.gamepad-active {
   font-size: 0.8rem;
   font-family: var(--font-code);
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .match-reason-box {
@@ -766,14 +807,14 @@ body.gamepad-active {
 }
 
 /* ==========================================================================
-   5. Sleek Console Footer
+   6. Sleek Console Footer
    ========================================================================== */
 .console-footer {
   height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 36px;
+  padding: 0 32px;
   background: var(--bg-glass);
   border-top: 1px solid var(--border-subtle);
   font-size: 0.78rem;
@@ -785,6 +826,7 @@ body.gamepad-active {
   display: flex;
   align-items: center;
   gap: 10px;
+  white-space: nowrap;
 }
 
 .footer-dot {
@@ -794,10 +836,11 @@ body.gamepad-active {
 .footer-meta .version-label {
   font-family: var(--font-code);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
-   6. Controller Navigation Helper HUD Layer
+   7. Controller Navigation Helper HUD Layer
    ========================================================================== */
 .controller-hints-hud {
   position: fixed;
@@ -810,7 +853,8 @@ body.gamepad-active {
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-body.gamepad-active .controller-hints-hud {
+body.gamepad-active .controller-hints-hud,
+.controller-hints-hud.visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -828,12 +872,14 @@ body.gamepad-active .controller-hints-hud {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .hud-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .btn-badge {
@@ -857,7 +903,7 @@ body.gamepad-active .controller-hints-hud {
 .btn-menu { background: rgba(255,255,255,0.2); color: #fff; }
 
 /* ==========================================================================
-   7. Modals (Cinematic Glassmorphism)
+   8. Modals (Cinematic Glassmorphism)
    ========================================================================== */
 .modal-backdrop {
   position: fixed;

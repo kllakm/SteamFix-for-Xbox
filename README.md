@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.3.0-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.3.1-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-1A9FFF.svg?style=flat-square)](#handheld-experience)
@@ -149,6 +149,18 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+
+### [v1.3.1] - 2026-10-12
+- **FSE Freeze Resolution:**
+  - Fixed an unhandled startup exception in legacy DOM event binding that prevented the FSE toggle button, `F11` shortcut, and gamepad `Menu` button from firing.
+  - Added full defensive null guards across event listeners and ribbon statistics.
+- **Two-Tier Console Layout Architecture:**
+  - Separated header into a dedicated Horizon Topbar (brand and system utilities) and an expansive Category Tabs Strip (`Missing`, `Synced`, `All Steam`, `Xbox Library`).
+  - Completely eliminated horizontal button collision and prevented the `Scan` button from clipping on narrow window widths or handheld 720p/800p displays.
+- **Anti-Squash Layout Hardening:**
+  - Locked touch checkboxes to rigid 22x22px square dimensions (`flex-shrink: 0`) to prevent vertical oval distortion.
+  - Enforced `white-space: nowrap` across all pills, tabs, status indicators, and buttons, preventing awkward text wrapping inside button capsules.
+  - Added responsive flex-wrapping to action buttons to ensure smooth reflow across all display sizes.
 
 ### [v1.3.0] - 2026-10-12
 - **Console & Handheld UI/UX Overhaul:**

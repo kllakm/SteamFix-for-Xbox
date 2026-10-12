@@ -1,6 +1,6 @@
 // State
 let appState = {
-  version: '1.3.0',
+  version: '1.3.1',
   currentTab: 'missing',
   steamRoots: [],
   libraries: [],
@@ -191,10 +191,12 @@ function setupEventListeners() {
   });
 
   // Clear log
-  btnClearLog.addEventListener('click', (e) => {
-    e.stopPropagation();
-    consoleLogs.innerHTML = '';
-  });
+  if (btnClearLog) {
+    btnClearLog.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (consoleLogs) consoleLogs.innerHTML = '';
+    });
+  }
 
   // Collapsible Console Drawer (Handheld Touch optimization)
   if (drawerHeader && consoleDrawer) {
@@ -459,16 +461,16 @@ function render() {
   const allSteam = appState.games;
   const xboxCustom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
 
-  // Update Stats
-  statSteamGames.textContent = allSteam.length;
-  statLibrariesCount.textContent = `${appState.libraries.length} library folder${appState.libraries.length === 1 ? '' : 's'}`;
+  // Update Stats (if elements exist)
+  if (statSteamGames) statSteamGames.textContent = allSteam.length;
+  if (statLibrariesCount) statLibrariesCount.textContent = `${appState.libraries.length} library folder${appState.libraries.length === 1 ? '' : 's'}`;
   
   const totalXbox = xboxCustom.length;
-  statXboxGames.textContent = totalXbox;
-  statXboxStatus.textContent = `${totalXbox} custom title${totalXbox === 1 ? '' : 's'}`;
+  if (statXboxGames) statXboxGames.textContent = totalXbox;
+  if (statXboxStatus) statXboxStatus.textContent = `${totalXbox} custom title${totalXbox === 1 ? '' : 's'}`;
 
-  statMissingGames.textContent = missing.length;
-  statSyncedGames.textContent = synced.length;
+  if (statMissingGames) statMissingGames.textContent = missing.length;
+  if (statSyncedGames) statSyncedGames.textContent = synced.length;
 
   badgeMissing.textContent = missing.length;
   badgeSynced.textContent = synced.length;

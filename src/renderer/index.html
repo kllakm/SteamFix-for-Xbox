@@ -12,39 +12,17 @@
 </head>
 <body>
   <div class="console-app">
-    <!-- Console Navigation Header -->
-    <header class="console-header">
-      <div class="header-left">
-        <div class="brand-group">
-          <img src="assets/logo-64.png" alt="Logo" class="console-logo" />
-          <div class="brand-titles">
-            <h1 class="console-title">XboxSteamBridge</h1>
-            <span class="console-badge" id="semverBadge">v1.3.0</span>
-          </div>
+    <!-- Tier 1: Horizon Topbar (Brand, Process Status, and Utilities) -->
+    <header class="console-topbar">
+      <div class="brand-group">
+        <img src="assets/logo-64.png" alt="Logo" class="console-logo" />
+        <div class="brand-titles">
+          <h1 class="console-title">XboxSteamBridge</h1>
+          <span class="console-badge" id="semverBadge">v1.3.1</span>
         </div>
-
-        <!-- Primary Navigation Tabs -->
-        <nav class="console-tabs" aria-label="Library Navigation">
-          <button class="nav-tab tab-btn active" data-tab="missing" id="tabMissing">
-            <span>Missing</span>
-            <span class="tab-count" id="badgeMissing">0</span>
-          </button>
-          <button class="nav-tab tab-btn" data-tab="synced" id="tabSynced">
-            <span>Synced</span>
-            <span class="tab-count" id="badgeSynced">0</span>
-          </button>
-          <button class="nav-tab tab-btn" data-tab="all" id="tabAll">
-            <span>All Steam</span>
-            <span class="tab-count" id="badgeAll">0</span>
-          </button>
-          <button class="nav-tab tab-btn" data-tab="xbox" id="tabXbox">
-            <span>Xbox Library</span>
-            <span class="tab-count" id="badgeXbox">0</span>
-          </button>
-        </nav>
       </div>
 
-      <div class="header-right">
+      <div class="topbar-right">
         <!-- Process Status -->
         <div class="status-indicator" id="processPill" title="Xbox App status">
           <span class="status-dot" id="processDot"></span>
@@ -73,6 +51,28 @@
         </div>
       </div>
     </header>
+
+    <!-- Tier 2: Dedicated Horizon Navigation Strip (Clean, Spacious Console Tabs) -->
+    <nav class="console-nav-strip" aria-label="Library Navigation">
+      <div class="console-tabs">
+        <button class="nav-tab tab-btn active" data-tab="missing" id="tabMissing">
+          <span class="tab-label">Missing</span>
+          <span class="tab-count" id="badgeMissing">0</span>
+        </button>
+        <button class="nav-tab tab-btn" data-tab="synced" id="tabSynced">
+          <span class="tab-label">Synced</span>
+          <span class="tab-count" id="badgeSynced">0</span>
+        </button>
+        <button class="nav-tab tab-btn" data-tab="all" id="tabAll">
+          <span class="tab-label">All Steam</span>
+          <span class="tab-count" id="badgeAll">0</span>
+        </button>
+        <button class="nav-tab tab-btn" data-tab="xbox" id="tabXbox">
+          <span class="tab-label">Xbox Library</span>
+          <span class="tab-count" id="badgeXbox">0</span>
+        </button>
+      </div>
+    </nav>
 
     <!-- Main Workspace (Spacious, Roomy Console View) -->
     <main class="console-main">
@@ -131,7 +131,7 @@
         <span class="status-item" id="footerXboxStatus">Xbox LocalState Ready</span>
       </div>
       <div class="footer-meta">
-        <span class="version-label" id="footerVersionBadge">v1.3.0</span>
+        <span class="version-label" id="footerVersionBadge">v1.3.1</span>
       </div>
     </footer>
 
