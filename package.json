@@ -1,0 +1,60 @@
+{
+  "name": "xbox-steam-bridge",
+  "productName": "XboxSteamBridge",
+  "version": "1.0.0",
+  "description": "Seamlessly integrates local Steam libraries with PC Xbox App, deduplicating titles and injecting Steam launch URIs and CDN grid artwork.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "dist": "electron-builder --win --x64"
+  },
+  "keywords": [
+    "xbox",
+    "steam",
+    "gaming",
+    "library-sync",
+    "windows",
+    "electron"
+  ],
+  "author": "XboxSteamBridge Contributors",
+  "license": "MIT",
+  "build": {
+    "appId": "com.xboxsteambridge.app",
+    "productName": "XboxSteamBridge",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "XboxSteamBridge-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "XboxSteamBridge-Setup.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8"
+  }
+}
