@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.3.1-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.3.3-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-1A9FFF.svg?style=flat-square)](#handheld-experience)
@@ -149,6 +149,23 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+
+### [v1.3.3] - 2026-10-12
+- **Title Hiding & Dedicated "Hidden" Category Tab:**
+  - Added ability to hide any game from Xbox injection suggestions and auto-selection with a single click or tap.
+  - Added dedicated "Hidden" tab in the navigation strip with full count badge (`badgeHidden`) to review and unhide hidden titles at any time.
+  - Persistent storage preserves hidden game preferences across app restarts.
+  - Controller navigation updated to seamlessly cycle across all 5 library categories (`Missing`, `Synced`, `All Steam`, `Hidden`, `Xbox Library`).
+- **Cleaned Action Controls:**
+  - Removed sample fixtures buttons from the action bar and empty library state for a streamlined, clutter-free console workflow.
+- **Living Glass Console Interface & Empty State Proportions:**
+  - Deep atmospheric obsidian aesthetic (`#080c10`) with frosted acrylic horizon strips and translucent pill buttons.
+  - Fixed empty-state SVG sizing by constraining icon to 28px inside a 60px frosted circular badge.
+
+### [v1.3.2] - 2026-10-12
+- **Living Glass UI & Empty State Proportions:**
+  - Modernized visual aesthetics with frosted acrylic panels, soft blur, and refined translucent pills.
+  - Fixed empty library state icon sizing with circular badge and proper dimensions.
 
 ### [v1.3.1] - 2026-10-12
 - **FSE Freeze Resolution:**

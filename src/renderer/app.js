@@ -1,12 +1,31 @@
+// Hidden Games Persistent Storage
+function getHiddenAppIds() {
+  try {
+    const raw = localStorage.getItem('xboxSteamBridge_hiddenAppIds');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function saveHiddenAppIds(set) {
+  try {
+    localStorage.setItem('xboxSteamBridge_hiddenAppIds', JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.error('Failed to save hidden app IDs:', e);
+  }
+}
+
 // State
 let appState = {
-  version: '1.3.1',
+  version: '1.3.3',
   currentTab: 'missing',
   steamRoots: [],
   libraries: [],
   games: [],
   xboxData: null,
   selectedAppIds: new Set(),
+  hiddenAppIds: getHiddenAppIds(),
   searchQuery: '',
   isScanning: false,
   isSyncing: false,
@@ -26,6 +45,7 @@ const statSyncedGames = document.getElementById('statSyncedGames');
 const badgeMissing = document.getElementById('badgeMissing');
 const badgeSynced = document.getElementById('badgeSynced');
 const badgeAll = document.getElementById('badgeAll');
+const badgeHidden = document.getElementById('badgeHidden');
 const badgeXbox = document.getElementById('badgeXbox');
 const searchInput = document.getElementById('searchInput');
 const gamesContainer = document.getElementById('gamesContainer');
@@ -122,24 +142,26 @@ function setupEventListeners() {
     }
   });
 
-  // Load Demo / Sample Titles
-  btnDemoFixture.addEventListener('click', async () => {
-    try {
-      logConsole('[Demo] Generating sample Steam library fixtures...', 'info');
-      const res = await window.api.createDemoLibrary();
-      if (res.success) {
-        if (!appState.customPaths.includes(res.demoDir)) {
-          appState.customPaths.push(res.demoDir);
+  // Load Demo / Sample Titles (if present)
+  if (btnDemoFixture) {
+    btnDemoFixture.addEventListener('click', async () => {
+      try {
+        logConsole('[Demo] Generating sample Steam library fixtures...', 'info');
+        const res = await window.api.createDemoLibrary();
+        if (res.success) {
+          if (!appState.customPaths.includes(res.demoDir)) {
+            appState.customPaths.push(res.demoDir);
+          }
+          logConsole(`[Demo] Sample Steam library initialized at: ${res.demoDir}`, 'success');
+          await triggerScan();
+        } else {
+          logConsole(`[Demo] Failed to generate fixture: ${res.error}`, 'error');
         }
-        logConsole(`[Demo] Sample Steam library initialized at: ${res.demoDir}`, 'success');
-        await triggerScan();
-      } else {
-        logConsole(`[Demo] Failed to generate fixture: ${res.error}`, 'error');
+      } catch (err) {
+        logConsole(`[Error] ${err.message}`, 'error');
       }
-    } catch (err) {
-      logConsole(`[Error] ${err.message}`, 'error');
-    }
-  });
+    });
+  }
 
   // Kill Xbox Process
   btnKillXbox.addEventListener('click', async () => {
@@ -314,10 +336,10 @@ async function triggerScan() {
       appState.games = result.games;
       appState.xboxData = result.xboxData;
 
-      // Select all missing games by default
+      // Select all unhidden missing games by default
       appState.selectedAppIds.clear();
       appState.games
-        .filter(g => !g.isDuplicate)
+        .filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)))
         .forEach(g => appState.selectedAppIds.add(g.appid));
 
       logConsole(`[Scanner] Discovered ${result.libraries.length} Steam library roots, found ${result.totalSteamGames} Steam games.`, 'info');
@@ -380,16 +402,31 @@ async function executeSync() {
 
 // Helpers
 function getSelectedMissingGames() {
-  return appState.games.filter(g => !g.isDuplicate && appState.selectedAppIds.has(g.appid));
+  return appState.games.filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)) && appState.selectedAppIds.has(g.appid));
 }
 
 function getFilteredMissingGames() {
   return appState.games
-    .filter(g => !g.isDuplicate)
+    .filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)))
     .filter(g => {
       if (!appState.searchQuery) return true;
       return g.name.toLowerCase().includes(appState.searchQuery) || g.appid.includes(appState.searchQuery);
     });
+}
+
+function hideGame(appid) {
+  appState.hiddenAppIds.add(String(appid));
+  saveHiddenAppIds(appState.hiddenAppIds);
+  appState.selectedAppIds.delete(appid);
+  logConsole(`[Library] Hid title (AppID: ${appid}) from sync suggestions`, 'info');
+  render();
+}
+
+function unhideGame(appid) {
+  appState.hiddenAppIds.delete(String(appid));
+  saveHiddenAppIds(appState.hiddenAppIds);
+  logConsole(`[Library] Restored title (AppID: ${appid}) to active suggestions`, 'info');
+  render();
 }
 
 function logConsole(message, type = 'info') {
@@ -456,7 +493,8 @@ async function loadBackupsList() {
 
 // Render UI
 function render() {
-  const missing = appState.games.filter(g => !g.isDuplicate);
+  const hiddenGames = appState.games.filter(g => appState.hiddenAppIds.has(String(g.appid)));
+  const missing = appState.games.filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)));
   const synced = appState.games.filter(g => g.isDuplicate);
   const allSteam = appState.games;
   const xboxCustom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
@@ -472,10 +510,11 @@ function render() {
   if (statMissingGames) statMissingGames.textContent = missing.length;
   if (statSyncedGames) statSyncedGames.textContent = synced.length;
 
-  badgeMissing.textContent = missing.length;
-  badgeSynced.textContent = synced.length;
-  badgeAll.textContent = allSteam.length;
-  badgeXbox.textContent = totalXbox;
+  if (badgeMissing) badgeMissing.textContent = missing.length;
+  if (badgeSynced) badgeSynced.textContent = synced.length;
+  if (badgeAll) badgeAll.textContent = allSteam.length;
+  if (badgeHidden) badgeHidden.textContent = hiddenGames.length;
+  if (badgeXbox) badgeXbox.textContent = totalXbox;
 
   // Sync Button State
   const selectedCount = getSelectedMissingGames().length;
@@ -508,11 +547,13 @@ function renderCards() {
   const q = appState.searchQuery;
 
   if (appState.currentTab === 'missing') {
-    listToDisplay = appState.games.filter(g => !g.isDuplicate);
+    listToDisplay = appState.games.filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)));
   } else if (appState.currentTab === 'synced') {
     listToDisplay = appState.games.filter(g => g.isDuplicate);
   } else if (appState.currentTab === 'all') {
     listToDisplay = appState.games;
+  } else if (appState.currentTab === 'hidden') {
+    listToDisplay = appState.games.filter(g => appState.hiddenAppIds.has(String(g.appid)));
   } else if (appState.currentTab === 'xbox') {
     // Show Xbox library titles
     const custom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
@@ -544,15 +585,26 @@ function renderCards() {
     const isSelected = appState.selectedAppIds.has(game.appid);
     card.className = `game-card ${isSelected && !game.isDuplicate ? 'selected' : ''}`;
 
+    const isHidden = appState.hiddenAppIds.has(String(game.appid));
     const isMissingTab = appState.currentTab === 'missing';
+
+    let statusPillClass = 'pill-missing';
+    let statusPillText = 'Missing from Xbox';
+    if (game.isDuplicate) {
+      statusPillClass = 'pill-synced';
+      statusPillText = 'In Xbox Library';
+    } else if (isHidden) {
+      statusPillClass = 'pill-hidden';
+      statusPillText = 'Hidden';
+    }
 
     card.innerHTML = `
       <div class="card-header-art">
         ${isMissingTab ? `
           <input type="checkbox" class="card-checkbox" data-appid="${game.appid}" ${isSelected ? 'checked' : ''} />
         ` : ''}
-        <span class="card-status-pill ${game.isDuplicate ? 'pill-synced' : 'pill-missing'}">
-          ${game.isDuplicate ? 'In Xbox Library' : 'Missing from Xbox'}
+        <span class="card-status-pill ${statusPillClass}">
+          ${statusPillText}
         </span>
         <img src="${game.headerUrl}" alt="${game.name}" onerror="this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg'; this.onerror=null;" />
       </div>
@@ -566,9 +618,38 @@ function renderCards() {
         ${game.isDuplicate && game.matchReason ? `
           <div class="match-reason-box">${game.matchReason}</div>
         ` : ''}
-        <div class="game-path" title="${game.installLocation}">${game.installLocation}</div>
+        <div class="card-footer-row">
+          <div class="game-path" title="${game.installLocation}">${game.installLocation}</div>
+          ${!game.isDuplicate ? (isHidden ? `
+            <button class="card-action-btn btn-unhide" data-appid="${game.appid}" title="Unhide and restore to suggestions">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Unhide</span>
+            </button>
+          ` : `
+            <button class="card-action-btn btn-hide" data-appid="${game.appid}" title="Hide from injection suggestions">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              <span>Hide</span>
+            </button>
+          `) : ''}
+        </div>
       </div>
     `;
+
+    const hideBtn = card.querySelector('.btn-hide');
+    if (hideBtn) {
+      hideBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideGame(game.appid);
+      });
+    }
+
+    const unhideBtn = card.querySelector('.btn-unhide');
+    if (unhideBtn) {
+      unhideBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        unhideGame(game.appid);
+      });
+    }
 
     if (isMissingTab) {
       card.classList.add('touch-interactive');
@@ -588,15 +669,19 @@ function renderCards() {
         syncBtnLabel.textContent = selCount > 0 ? `Sync ${selCount} to Xbox` : 'Sync to Xbox App';
       };
 
-      checkbox.addEventListener('change', (e) => {
-        toggleSelection(e.target.checked);
-      });
+      if (checkbox) {
+        checkbox.addEventListener('change', (e) => {
+          toggleSelection(e.target.checked);
+        });
+      }
 
       // Handheld touch optimization: Tap anywhere on the card to toggle selection!
       card.addEventListener('click', (e) => {
-        if (e.target.classList.contains('card-checkbox')) return;
-        checkbox.checked = !checkbox.checked;
-        toggleSelection(checkbox.checked);
+        if (e.target.closest('.card-action-btn') || e.target.classList.contains('card-checkbox')) return;
+        if (checkbox) {
+          checkbox.checked = !checkbox.checked;
+          toggleSelection(checkbox.checked);
+        }
       });
     }
 
@@ -665,18 +750,41 @@ function renderXboxCards(xboxGames) {
 function renderEmptyState() {
   const empty = document.createElement('div');
   empty.className = 'empty-state';
+  const isNoGamesAtAll = appState.games.length === 0;
+
   empty.innerHTML = `
-    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M8 12h8"/>
-    </svg>
-    <h3 class="empty-title">No games found in this view</h3>
+    <div class="empty-icon-wrap">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 11h4M8 9v4m7-2h.01M18 13h.01M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8z"/>
+      </svg>
+    </div>
+    <h3 class="empty-title">${isNoGamesAtAll ? 'No Steam Games Detected' : 'No titles in this view'}</h3>
     <p class="empty-desc">
-      ${appState.games.length === 0 
-        ? "We couldn't detect any Steam libraries on default paths. Click 'Add Steam Folder' to point to your Steam library, or click 'Load Sample Titles' to test immediately."
+      ${isNoGamesAtAll 
+        ? "We couldn't detect any Steam libraries on default drives. Add a custom library folder or load sample titles to test Xbox synchronization."
         : "All games match your filters or none are currently available in this category."}
     </p>
+    ${isNoGamesAtAll ? `
+      <div class="empty-actions">
+        <button class="console-btn btn-ghost" id="emptyBtnFolder">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>Add Folder</span>
+        </button>
+        <button class="console-btn btn-cta" id="emptyBtnSamples">
+          <svg class="btn-icon-cta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Load Samples</span>
+        </button>
+      </div>
+    ` : ''}
   `;
+
+  if (isNoGamesAtAll) {
+    const fBtn = empty.querySelector('#emptyBtnFolder');
+    const sBtn = empty.querySelector('#emptyBtnSamples');
+    if (fBtn) fBtn.addEventListener('click', () => btnAddFolder.click());
+    if (sBtn) sBtn.addEventListener('click', () => btnDemoFixture.click());
+  }
+
   gamesContainer.appendChild(empty);
 }
 
@@ -1004,7 +1112,7 @@ const controllerNav = {
   },
 
   switchTab(direction) {
-    const tabs = ['missing', 'synced', 'all', 'xbox'];
+    const tabs = ['missing', 'synced', 'all', 'hidden', 'xbox'];
     const currentIdx = tabs.indexOf(appState.currentTab);
     const nextIdx = (currentIdx + direction + tabs.length) % tabs.length;
     const nextTab = tabs[nextIdx];

@@ -18,7 +18,7 @@
         <img src="assets/logo-64.png" alt="Logo" class="console-logo" />
         <div class="brand-titles">
           <h1 class="console-title">XboxSteamBridge</h1>
-          <span class="console-badge" id="semverBadge">v1.3.1</span>
+          <span class="console-badge" id="semverBadge">v1.3.3</span>
         </div>
       </div>
 
@@ -67,6 +67,10 @@
           <span class="tab-label">All Steam</span>
           <span class="tab-count" id="badgeAll">0</span>
         </button>
+        <button class="nav-tab tab-btn" data-tab="hidden" id="tabHidden">
+          <span class="tab-label">Hidden</span>
+          <span class="tab-count" id="badgeHidden">0</span>
+        </button>
         <button class="nav-tab tab-btn" data-tab="xbox" id="tabXbox">
           <span class="tab-label">Xbox Library</span>
           <span class="tab-count" id="badgeXbox">0</span>
@@ -104,11 +108,6 @@
             <span>Add Folder</span>
           </button>
 
-          <button class="console-btn btn-ghost" id="btnDemoFixture" title="Load sample Steam game fixtures for immediate testing">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            <span>Samples</span>
-          </button>
-
           <!-- Primary Hero Console Action -->
           <button class="console-btn btn-cta" id="btnSync" disabled>
             <svg class="btn-icon-cta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -131,7 +130,7 @@
         <span class="status-item" id="footerXboxStatus">Xbox LocalState Ready</span>
       </div>
       <div class="footer-meta">
-        <span class="version-label" id="footerVersionBadge">v1.3.1</span>
+        <span class="version-label" id="footerVersionBadge">v1.3.3</span>
       </div>
     </footer>
 
