@@ -1,6 +1,6 @@
 // State
 let appState = {
-  version: '1.0.0',
+  version: '1.1.1',
   currentTab: 'missing',
   steamRoots: [],
   libraries: [],
@@ -276,7 +276,7 @@ async function triggerScan() {
         .forEach(g => appState.selectedAppIds.add(g.appid));
 
       logConsole(`[Scanner] Discovered ${result.libraries.length} Steam library roots, found ${result.totalSteamGames} Steam games.`, 'info');
-      logConsole(`[Xbox] LocalState database parsed. ${result.xboxData.totalRegisteredXboxTitles} titles found in Xbox App.`, 'info');
+      logConsole(`[Xbox] LocalState parsed. ${result.xboxData.totalRegisteredXboxTitles} custom titles found in Xbox App.`, 'info');
       logConsole(`[Result] ${result.missingCount} games missing from Xbox. ${result.syncedCount} already synchronized.`, 'success');
     } else {
       logConsole(`[Error] Scan failed: ${result.error}`, 'error');
@@ -415,15 +415,14 @@ function render() {
   const synced = appState.games.filter(g => g.isDuplicate);
   const allSteam = appState.games;
   const xboxCustom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
-  const xboxStore = (appState.xboxData && appState.xboxData.storeGames) ? appState.xboxData.storeGames : [];
 
   // Update Stats
   statSteamGames.textContent = allSteam.length;
   statLibrariesCount.textContent = `${appState.libraries.length} library folder${appState.libraries.length === 1 ? '' : 's'}`;
   
-  const totalXbox = appState.xboxData ? appState.xboxData.totalRegisteredXboxTitles : 0;
+  const totalXbox = xboxCustom.length;
   statXboxGames.textContent = totalXbox;
-  statXboxStatus.textContent = `${xboxCustom.length} custom, ${xboxStore.length} store titles`;
+  statXboxStatus.textContent = `${totalXbox} custom title${totalXbox === 1 ? '' : 's'}`;
 
   statMissingGames.textContent = missing.length;
   statSyncedGames.textContent = synced.length;
@@ -472,13 +471,11 @@ function renderCards() {
   } else if (appState.currentTab === 'xbox') {
     // Show Xbox library titles
     const custom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
-    const store = (appState.xboxData && appState.xboxData.storeGames) ? appState.xboxData.storeGames : [];
-    const combinedXbox = [...custom, ...store];
 
     if (q) {
-      listToDisplay = combinedXbox.filter(x => (x.title || '').toLowerCase().includes(q));
+      listToDisplay = custom.filter(x => (x.title || '').toLowerCase().includes(q));
     } else {
-      listToDisplay = combinedXbox;
+      listToDisplay = custom;
     }
 
     renderXboxCards(listToDisplay);

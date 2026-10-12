@@ -472,13 +472,14 @@ html, body {
 }
 
 /* ==========================================================================
-   Toolbar & Navigation Tabs (Touch Friendly)
+   Toolbar Tier 1: Navigation Tabs & Search Box
    ========================================================================== */
-.toolbar {
+.toolbar-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
   flex-shrink: 0;
 }
 
@@ -490,6 +491,7 @@ html, body {
   padding: 6px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  flex-wrap: wrap;
 }
 
 .tab-btn {
@@ -540,11 +542,6 @@ html, body {
   color: var(--xbox-accent);
 }
 
-.toolbar-middle {
-  flex: 1;
-  max-width: 380px;
-}
-
 .search-box {
   display: flex;
   align-items: center;
@@ -554,6 +551,10 @@ html, body {
   border-radius: var(--radius-md);
   padding: 8px 16px;
   min-height: var(--touch-target-min);
+  flex: 1;
+  max-width: 380px;
+  min-width: 200px;
+  margin-left: auto;
   transition: border-color var(--transition-fast);
 }
 
@@ -577,6 +578,7 @@ html, body {
   color: var(--text-main);
   font-family: var(--font-sans);
   font-size: 0.92rem;
+  min-width: 0;
 }
 
 .search-box input::placeholder {
@@ -596,20 +598,23 @@ html, body {
   color: var(--text-main);
 }
 
-.sync-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 /* ==========================================================================
-   Selection Banner
+   Toolbar Tier 2: Action Command Bar & Selection Banner (Never Cropped)
    ========================================================================== */
-.selection-banner {
+.action-command-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.selection-banner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 18px;
   background: rgba(0, 229, 117, 0.06);
   border: 1px solid rgba(0, 229, 117, 0.25);
   border-radius: var(--radius-md);
@@ -638,6 +643,14 @@ html, body {
 .selection-count {
   color: var(--xbox-accent);
   font-weight: 700;
+}
+
+.sync-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 /* ==========================================================================
@@ -1203,12 +1216,20 @@ html, body {
   .stats-ribbon {
     flex-direction: column;
   }
-  .toolbar {
-    flex-wrap: wrap;
+  .toolbar-nav {
+    flex-direction: column;
+    align-items: stretch;
   }
-  .toolbar-middle {
-    order: 3;
+  .search-box {
     max-width: 100%;
-    width: 100%;
+    margin-left: 0;
+  }
+  .action-command-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sync-actions {
+    margin-left: 0;
+    justify-content: flex-end;
   }
 }

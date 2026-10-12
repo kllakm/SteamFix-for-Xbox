@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-00E575.svg?style=flat-square" alt="Version 1.1.0" />
+  <img src="https://img.shields.io/badge/version-1.1.1-00E575.svg?style=flat-square" alt="Version 1.1.1" />
   <img src="https://img.shields.io/badge/platform-Windows-107C10.svg?style=flat-square" alt="Platform Windows" />
   <img src="https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Handheld%20Ready-1A9FFF.svg?style=flat-square" alt="Handheld Ready" />
   <img src="https://img.shields.io/badge/framework-Electron%20%2B%20Node.js-1A9FFF.svg?style=flat-square" alt="Electron + Node.js" />
@@ -45,8 +45,9 @@ The modern PC Xbox App (`Microsoft.GamingApp`) is designed to aggregate your PC 
   - Reads and extracts `appmanifest_<id>.acf` to capture `appid`, `name`, `installdir`, and primary executable.
   - Allows manual addition of custom Steam library folders.
 - **Deep Xbox App State Inspection & Deduplication:**
-  - Reads `CustomLibraryManagement.manifest`, `ThirdPartyLibraries\CustomLibraryManagement\CustomLibraryManagement.manifest`, and `AsyncCache.db`.
+  - Reads `CustomLibraryManagement.manifest` and `ThirdPartyLibraries\CustomLibraryManagement\CustomLibraryManagement.manifest`.
   - Rigorously deduplicates against existing Xbox entries using App IDs, normalized title matching (stripping punctuation/trademarks), and executable binaries.
+  - Excludes misleading uninstalled remote store catalog caches (`AsyncCache.db`), focusing purely on games genuinely in the user's custom library.
 - **Process Safety & Automated Backups:**
   - Detects if `XboxPcApp.exe` or background services are active and handles graceful closure to release SQLite/file locks.
   - Automatically generates timestamped backups (`.bak`) in `%LOCALAPPDATA%\Packages\Microsoft.GamingApp_8wekyb3d8bbwe\LocalState\XboxSteamBridge_Backups` before writing.
@@ -113,6 +114,15 @@ XboxSteamBridge strictly enforces the mandatory workflow rules defined in [PROJE
 ---
 
 ## ## Changelog
+
+### [v1.1.1] - 2026-10-12
+- **Responsive Layout & Crop Prevention:**
+  - Separated navigation tabs and action buttons into a two-tier command layout (`toolbar-nav` and `action-command-bar`).
+  - Added responsive flex-wrapping so `Add Folder`, `Samples`, and `Sync to Xbox App` are never cut off or pushed off screen, even when the window is resized halfway or running in windowed mode.
+- **Removed Phantom "1488 in Xbox App" Store Cache:**
+  - Removed reading of `AsyncCache.db` product summaries (which was caching remote Microsoft Store catalog items browsed over HTTP rather than actual installed games).
+  - Xbox library count now accurately reflects only genuinely registered custom and bridged titles in `CustomLibraryManagement.manifest`.
+  - Eliminated false-positive deduplication collisions against unowned store catalog items.
 
 ### [v1.1.0] - 2026-10-12
 - **ROG Ally & Handheld Touch Optimization:**

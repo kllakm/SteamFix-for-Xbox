@@ -22,7 +22,7 @@
           <h1 class="brand-title">XboxSteamBridge</h1>
           <span class="brand-tagline">ROG Ally & PC Handheld Touch Edition</span>
         </div>
-        <div class="semver-badge" id="semverBadge">v1.1.0</div>
+        <div class="semver-badge" id="semverBadge">v1.1.1</div>
       </div>
 
       <div class="topbar-actions">
@@ -82,10 +82,10 @@
             </div>
             <div class="sub-stat-meta">
               <div class="sub-stat-header">
-                <span class="sub-stat-num" id="statXboxGames">--</span>
+                <span class="sub-stat-num" id="statXboxGames">0</span>
                 <span class="sub-stat-label">In Xbox App</span>
               </div>
-              <span class="sub-stat-hint" id="statXboxStatus">Reading LocalState...</span>
+              <span class="sub-stat-hint" id="statXboxStatus">Custom Library</span>
             </div>
           </div>
 
@@ -104,8 +104,8 @@
         </div>
       </section>
 
-      <!-- Action & Filter Bar (Touch Sized) -->
-      <section class="toolbar">
+      <!-- Row 1: Navigation & Filter Tabs with Search Bar -->
+      <section class="toolbar-nav">
         <div class="tab-pills">
           <button class="tab-btn active" data-tab="missing" id="tabMissing">
             <span>Missing from Xbox</span>
@@ -125,12 +125,22 @@
           </button>
         </div>
 
-        <div class="toolbar-middle">
-          <div class="search-box">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="searchInput" placeholder="Search games by title or ID..." />
-            <button class="search-clear-btn" id="searchClearBtn" style="display: none;" title="Clear search">&times;</button>
-          </div>
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Search games by title or ID..." />
+          <button class="search-clear-btn" id="searchClearBtn" style="display: none;" title="Clear search">&times;</button>
+        </div>
+      </section>
+
+      <!-- Row 2: Action & Selection Command Bar (Guaranteed Never Cropped) -->
+      <section class="action-command-bar">
+        <div class="selection-banner" id="selectionBanner">
+          <label class="checkbox-container" id="selectAllTouchLabel">
+            <input type="checkbox" id="selectAllCheckbox" checked>
+            <span class="checkmark"></span>
+            <span id="selectLabel">Select All (0)</span>
+          </label>
+          <span class="selection-count" id="selectionSummary">0 titles selected for injection</span>
         </div>
 
         <div class="sync-actions">
@@ -150,16 +160,6 @@
           </button>
         </div>
       </section>
-
-      <!-- Selection & Bulk Controls (For Missing Tab) -->
-      <div class="selection-banner" id="selectionBanner">
-        <label class="checkbox-container" id="selectAllTouchLabel">
-          <input type="checkbox" id="selectAllCheckbox" checked>
-          <span class="checkmark"></span>
-          <span id="selectLabel">Select All (0)</span>
-        </label>
-        <span class="selection-count" id="selectionSummary">0 titles selected for injection</span>
-      </div>
 
       <!-- Games List Grid / Empty State -->
       <section class="games-container" id="gamesContainer">

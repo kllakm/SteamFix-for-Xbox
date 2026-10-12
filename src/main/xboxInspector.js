@@ -42,44 +42,6 @@ function readCustomManifest(manifestPath) {
 }
 
 /**
- * Read games cached in AsyncCache.db if possible
- */
-function readAsyncCacheGames(dbPath) {
-  const games = [];
-  if (!fs.existsSync(dbPath)) return games;
-
-  try {
-    const { DatabaseSync } = require('node:sqlite');
-    const db = new DatabaseSync(dbPath, { readOnly: true });
-    
-    // Inspect product summaries
-    const rows = db.prepare("SELECT key, value FROM AsyncCache WHERE scope = 'product_summary' LIMIT 3000").all();
-    for (const row of rows) {
-      try {
-        const val = JSON.parse(row.value);
-        const data = val.data || val;
-        if (data.title || data.name) {
-          games.push({
-            id: row.key,
-            title: data.title || data.name,
-            source: 'XboxStore',
-            launchUri: `ms-windows-store://pdp/?productid=${row.key}`,
-            isNative: true
-          });
-        }
-      } catch {
-        // Ignore single parse error
-      }
-    }
-  } catch (err) {
-    // If node:sqlite is unavailable or locked, silently proceed
-    console.log('AsyncCache.db reading skipped or locked:', err.message);
-  }
-
-  return games;
-}
-
-/**
  * Enumerate all games currently recognized or sideloaded in the Xbox App
  */
 function inspectXboxApp() {
@@ -88,7 +50,6 @@ function inspectXboxApp() {
 
   const manifestPath1 = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
   const manifestPath2 = path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  const asyncCachePath = path.join(localStateDir, 'AsyncCache.db');
 
   const manifest1 = readCustomManifest(manifestPath1);
   const manifest2 = readCustomManifest(manifestPath2);
@@ -113,18 +74,14 @@ function inspectXboxApp() {
   combineEntries(manifest1, 'CustomLibraryManagement.manifest');
   combineEntries(manifest2, 'ThirdPartyLibraries');
 
-  // Enumerate AsyncCache games (Native / store titles)
-  const storeGames = readAsyncCacheGames(asyncCachePath);
-
   return {
     localStateExists: exists,
     localStatePath: localStateDir,
     manifestPath1,
     manifestPath2,
-    asyncCachePath,
     customGames: Array.from(existingEntries.values()),
-    storeGames,
-    totalRegisteredXboxTitles: existingEntries.size + storeGames.length
+    storeGames: [],
+    totalRegisteredXboxTitles: existingEntries.size
   };
 }
 
@@ -158,13 +115,6 @@ function deduplicateSteamGames(steamGames, xboxData) {
     }
     if (cg.executableName) {
       knownExecutables.add(path.basename(cg.executableName).toLowerCase());
-    }
-  }
-
-  for (const sg of storeGames) {
-    if (sg.title) {
-      const norm = normalizeTitle(sg.title);
-      if (norm) knownNormalizedTitles.set(norm, sg.title);
     }
   }
 
