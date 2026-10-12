@@ -1,85 +1,108 @@
 # XboxSteamBridge
 
-<p align="center">
-  <strong>Bridge your Steam library seamlessly into the modern PC Xbox App.</strong>
-</p>
+Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-00E575.svg?style=flat-square" alt="Version 1.2.0" />
-  <img src="https://img.shields.io/badge/platform-Windows-107C10.svg?style=flat-square" alt="Platform Windows" />
-  <img src="https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square" alt="Controller Supported" />
-  <img src="https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Handheld%20Ready-1A9FFF.svg?style=flat-square" alt="Handheld Ready" />
-  <img src="https://img.shields.io/badge/framework-Electron%20%2B%20Node.js-1A9FFF.svg?style=flat-square" alt="Electron + Node.js" />
-  <img src="https://img.shields.io/badge/license-MIT-64748B.svg?style=flat-square" alt="License MIT" />
-</p>
+[![Release](https://img.shields.io/badge/release-v1.3.0-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
+[![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
+[![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-1A9FFF.svg?style=flat-square)](#handheld-experience)
+[![License](https://img.shields.io/badge/license-MIT-64748B.svg?style=flat-square)](LICENSE)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-yellow.svg?style=flat-square&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/enufstyle)
 
 ---
 
-## 🎮 Overview
+## Overview
 
-The modern PC Xbox App (`Microsoft.GamingApp`) is designed to aggregate your PC games into a centralized dashboard and handheld game bar. However, it frequently misses installed Steam games across secondary drives or non-standard library folders.
+The modern PC Xbox App (`Microsoft.GamingApp`) is built to unify your games into a single dashboard, launcher, and handheld game bar. However, it frequently overlooks installed Steam titles stored across secondary drives, custom folders, or removable storage.
 
-**XboxSteamBridge** scans your local Steam libraries, reads the Xbox App's local state database (`%LOCALAPPDATA%\Packages\Microsoft.GamingApp_8wekyb3d8bbwe\LocalState`), identifies any installed Steam games that the Xbox app failed to integrate, and injects them into the Xbox App's library with:
-- Full Title Metadata and install locations
-- Official launch protocols (`steam://run/<appid>`)
-- High-definition Steam CDN grid artwork (`https://cdn.cloudflare.steamstatic.com/steam/apps/<appid>/header.jpg` and `library_600x900_2x.jpg`)
-- Intelligent deduplication against native Xbox and existing sideloaded titles
-- Automated safety backups (`.bak`) and one-click rollback protection
-- **ROG Ally & Handheld PC Touch Optimization:** Generous touch targets (44px-48px+), whole-card tap selection, high-contrast readable typography, and collapsible diagnostics drawer.
-- **Unified Brand Identity:** Bespoke high-resolution icon artwork consistently utilized across installer, portable executable, window titlebar, and in-app header.
+**XboxSteamBridge** automatically inspects your Steam installation, queries the PC Xbox App's local database (`%LOCALAPPDATA%\Packages\Microsoft.GamingApp_8wekyb3d8bbwe\LocalState`), identifies missing titles, and registers them directly into the Xbox App library with:
+
+- Verified title metadata and executable paths
+- Native launch protocols (`steam://run/<appid>`)
+- High-definition Steam CDN artwork (`header.jpg` and `library_600x900_2x.jpg`)
+- Multi-tier deduplication against existing Xbox and sideloaded games
+- Automatic timestamped backups (`.bak`) and one-click database rollback
+- Console and handheld UI/UX built for Full Screen Experience (FSE) and Desktop mode
+- Full Windows Xbox gamepad controller navigation and touch controls
 
 ---
 
-## ✨ Key Features
+## Console UI and Handheld Experience
 
-- **ROG Ally & Handheld Touch Optimization:**
-  - Designed specifically for 7-inch handheld screens (ROG Ally, Legion Go, Steam Deck running Windows).
-  - Whole-surface tap selection for game cards—no precision checkbox tapping required.
-  - Generous 44px-48px touch targets across tabs, buttons, inputs, and modals.
-  - Less busy, decluttered status ribbon and collapsible live activity drawer to maximize game browsing view.
-- **Unified High-Definition App Icon & Identity:**
-  - High-quality Xbox emerald and Steam cyan fusion emblem embedded across the app.
-  - Multi-resolution Windows ICO (256x256 down to 16x16) for `XboxSteamBridge.exe`, NSIS installer package, portable binary, and titlebar.
+Designed from the ground up for handheld PCs (ASUS ROG Ally, Lenovo Legion Go, Steam Deck running Windows) as well as desktop gaming setups:
+
+- **Cinematic Console Aesthetics:** Roomy layout with breathing space, subtle ambient radial gradient background, and no cluttered card borders or nested boxes.
+- **Widescreen 16:9 Showcase Cards:** Spacious game showcase cards featuring authentic Steam CDN header banners, clear status indicators, and clean typographic metadata.
+- **Tactile Touch Targets:** Generous 44px-48px touch targets across tabs, buttons, checkboxes, and modals for easy navigation on 7-inch and 8-inch touchscreens.
+- **Full Screen Experience (FSE):** Dedicated FSE toggle button and shortcut (`F11` or controller `Menu` button) to expand into an immersive borderless console experience.
+
+---
+
+## Controller Navigation
+
+XboxSteamBridge provides out-of-the-box Windows controller support:
+
+- **Spatial Navigation:** Navigate seamlessly across cards, tabs, and action buttons using the D-Pad or Left Analog Stick.
+- **Xbox Emerald Halo Glow:** High-visibility green halo glow clearly highlights the active element during controller navigation.
+- **Controller Button Shortcuts:**
+  - `A`: Select / Toggle game or activate button
+  - `B`: Back / Close modals
+  - `X`: Toggle Select All
+  - `Y`: Scan Steam and Xbox libraries
+  - `LB` / `RB`: Cycle previous / next library tabs
+  - `Menu (Start)`: Toggle Full Screen Experience (FSE)
+  - `View (Select)`: Open Safety Backups manager
+- **Dynamic Helper HUD:** A floating, translucent HUD appears in the bottom right corner when a controller is active, displaying real-time button hints.
+- **Intelligent Input Switching:** Moving the mouse or touching the display instantly switches to desktop mode and restores the mouse cursor; engaging the controller hides the mouse cursor and enables the gamepad focus ring.
+
+---
+
+## Key Features
+
 - **Automated Steam Library Discovery:**
-  - Discovers Steam installation paths via Windows Registry (`HKCU\Software\Valve\Steam`, `HKLM\SOFTWARE\Valve\Steam`, `HKLM\SOFTWARE\WOW6432Node\Valve\Steam`) and fallback drives.
-  - Automatically parses `libraryfolders.vdf` to discover all mounted Steam library drives (D:, E:, G:, etc.).
-  - Reads and extracts `appmanifest_<id>.acf` to capture `appid`, `name`, `installdir`, and primary executable.
-  - Allows manual addition of custom Steam library folders.
+  - Resolves Steam library locations via Windows Registry (`HKCU` and `HKLM`) and secondary drives.
+  - Automatically parses `libraryfolders.vdf` across all mounted storage partitions (e.g., C:, D:, E:, G:).
+  - Reads individual `appmanifest_<id>.acf` files to extract `appid`, `name`, `installdir`, and primary executable.
+  - Supports adding custom library directories on demand.
 - **Deep Xbox App State Inspection & Deduplication:**
-  - Reads `CustomLibraryManagement.manifest` and `ThirdPartyLibraries\CustomLibraryManagement\CustomLibraryManagement.manifest`.
-  - Rigorously deduplicates against existing Xbox entries using App IDs, normalized title matching (stripping punctuation/trademarks), and executable binaries.
-  - Excludes misleading uninstalled remote store catalog caches (`AsyncCache.db`), focusing purely on games genuinely in the user's custom library.
-- **Process Safety & Automated Backups:**
-  - Detects if `XboxPcApp.exe` or background services are active and handles graceful closure to release SQLite/file locks.
-  - Automatically generates timestamped backups (`.bak`) in `%LOCALAPPDATA%\Packages\Microsoft.GamingApp_8wekyb3d8bbwe\LocalState\XboxSteamBridge_Backups` before writing.
-  - Provides a built-in **Backup & Rollback Manager** to revert changes at any time.
+  - Parses `CustomLibraryManagement.manifest` in the Xbox App LocalState folder.
+  - Eliminates duplicate entries using AppID, normalized game titles, and executable signatures.
+  - Ignores uninstalled remote store catalog caches (`AsyncCache.db`) to ensure only actual library entries are displayed.
+- **Safety Backups & Rollback:**
+  - Automatically detects whether `XboxPcApp.exe` is active and offers graceful closure before database writes to avoid file lock errors.
+  - Generates automated timestamped backups (`.bak`) in the `XboxSteamBridge_Backups` directory before every write.
+  - Integrated Backups & Rollback manager allows one-click restoration of any snapshot.
 
 ---
 
-## 🚀 Quick Start & Installation
+## Quick Start
 
 ### Option 1: Standalone Portable Binary (No Installation)
-Download and run:
+
+Download and launch:
 ```powershell
 .\dist\XboxSteamBridge-portable.exe
 ```
 
-### Option 2: Windows Installer
-Download and execute the installer:
+### Option 2: Windows Installer Package
+
+Download and run the installer:
 ```powershell
 .\dist\XboxSteamBridge-Setup.exe
 ```
 
 ---
 
-## 🛠️ Development & Building
+## Building from Source
 
 ### Prerequisites
-- Windows 10/11 (x64)
+
+- Windows 10 or 11 (64-bit)
 - Node.js (v20+ recommended)
 - npm (v10+)
 
 ### Setup
+
 ```powershell
 # Clone the repository
 git clone https://github.com/your-org/SteamFix-for-Xbox.git
@@ -88,76 +111,83 @@ cd "SteamFix for Xbox"
 # Install dependencies
 npm install
 
-# Start in development mode
+# Run in development mode
 npm start
 ```
 
-### Dual-Build Release Packaging
-To recompile both the Standalone Portable Executable and the Windows Installer Package into `/dist/`:
+### Dual Distribution Packaging
+
+To compile both the Standalone Portable Executable and the NSIS Windows Setup package:
+
 ```powershell
 npm run dist
 ```
-Outputs produced:
+
+Outputs generated in `/dist/`:
 - `dist/XboxSteamBridge-portable.exe`
 - `dist/XboxSteamBridge-Setup.exe`
 
 ---
 
-## 📜 Definition of Done & Project Governance
+## Support & Donations
 
-XboxSteamBridge strictly enforces the mandatory workflow rules defined in [PROJECT_RULES.md](PROJECT_RULES.md):
-1. **Implement & Verify Changes:** Clean code, passing tests, and no runtime errors.
-2. **Auto-Increment Version (SemVer):** Synchronized in `package.json`, Titlebar badge, and Footer.
-3. **Update Documentation & Changelog (`README.md`):** Complete release history and setup notes.
-4. **Recompile Both Distribution Binaries (`/dist/`):** Both portable executable and setup installer verified.
-5. **Provide One-Click GitHub CLI Release Command:** Formatted with version tag and concise summary.
+If XboxSteamBridge made organizing your PC handheld or desktop gaming library easier, please consider supporting continued development and maintenance:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-enufstyle-orange.svg?style=for-the-badge&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/enufstyle)
+
+**Buy Me a Coffee:** [www.buymeacoffee.com/enufstyle](https://www.buymeacoffee.com/enufstyle)
 
 ---
 
-## ## Changelog
+## Project Governance
+
+This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJECT_RULES.md):
+- Version increments follow Semantic Versioning (SemVer).
+- Every release validates both portable and installer binaries.
+- Release notes and changelogs are updated with every feature release.
+
+---
+
+## Changelog
+
+### [v1.3.0] - 2026-10-12
+- **Console & Handheld UI/UX Overhaul:**
+  - Redesigned interface into an authentic, spacious game/console dashboard suited for both Full Screen Experience (FSE) and Desktop mode.
+  - Clean Horizon navigation header with streamlined tabs (`Missing`, `Synced`, `All Steam`, `Xbox Library`).
+  - Spacious 16:9 widescreen showcase game cards with smooth hover scaling and high-contrast typography.
+  - High-visibility Xbox emerald halo focus states for gamepad and touch selection.
+  - Replaced busy status containers and nested cards with a clean contextual action bar.
+- **GitHub Documentation Polish:**
+  - Modernized README with standard shields/badges and clean formatting.
+  - Removed informal emoji icons from section headers.
+  - Added dedicated Support & Donations section for Buy Me a Coffee (`www.buymeacoffee.com/enufstyle`).
 
 ### [v1.2.0] - 2026-10-12
-- **Full Windows Controller & Gamepad Navigation Engine:**
-  - Standard Xbox controller D-pad and left analog stick spatial navigation across cards, tabs, and action controls.
-  - Dedicated gamepad shortcuts: `[A]` Select / Toggle, `[B]` Back / Close Modals, `[X]` Toggle Select All, `[Y]` Instant Scan, `[LB/RB]` Cycle Tabs, `[Menu]` Toggle FSE, `[View]` Safety Backups.
-  - Automatic controller detection: activates when buttons or thumbsticks are moved while the application is in focus.
-  - Seamless desktop fallback: moving the mouse or touching the screen instantly disables controller mode and restores mouse interaction.
-  - Automatic mouse cursor hiding: cursor is completely hidden over the application while controller navigation is active.
-- **Xbox Halo Selection Glow:**
-  - Vibrant Xbox green halo outline and glowing border on the actively focused interactive element in gamepad mode.
-- **Controller Helper Hints HUD Layer:**
-  - Floating, frosted-capsule HUD in the bottom right corner showing color-coded Xbox button badges (`A`, `B`, `X`, `Y`, `LB/RB`, `☰`).
-  - Dynamically displays only when a controller is detected, actively being used, and the app has focus.
-- **Full Screen Experience (FSE) Mode:**
-  - Added dedicated topbar `FSE` toggle button and `F11` keyboard / controller `Menu` shortcut for true borderless fullscreen gaming experience on handheld displays (ROG Ally, Legion Go).
+- **Windows Controller Navigation:**
+  - Xbox gamepad D-pad and left analog stick spatial navigation.
+  - Dedicated controller shortcuts (`A` Select, `B` Back, `X` Select All, `Y` Scan, `LB/RB` Tabs, `Menu` FSE, `View` Backups).
+  - Floating controller hints HUD layer with dynamic auto-hide.
+  - Cursor auto-hiding during gamepad interaction with instant mouse wake-up.
+- **Full Screen Experience (FSE):**
+  - Added FSE toggle button and shortcut (`F11` or `Menu` button) for immersive handheld gaming.
 
 ### [v1.1.1] - 2026-10-12
-- **Responsive Layout & Crop Prevention:**
-  - Separated navigation tabs and action buttons into a two-tier command layout (`toolbar-nav` and `action-command-bar`).
-  - Added responsive flex-wrapping so `Add Folder`, `Samples`, and `Sync to Xbox App` are never cut off or pushed off screen, even when the window is resized halfway or running in windowed mode.
-- **Removed Phantom "1488 in Xbox App" Store Cache:**
-  - Removed reading of `AsyncCache.db` product summaries (which was caching remote Microsoft Store catalog items browsed over HTTP rather than actual installed games).
-  - Xbox library count now accurately reflects only genuinely registered custom and bridged titles in `CustomLibraryManagement.manifest`.
-  - Eliminated false-positive deduplication collisions against unowned store catalog items.
+- **Responsive Layout Improvements:**
+  - Resolved button truncation and wrapping issues when the window is resized.
+  - Removed uninstalled Microsoft Store cache items (`AsyncCache.db`) to ensure accurate library counts.
 
 ### [v1.1.0] - 2026-10-12
-- **ROG Ally & Handheld Touch Optimization:**
-  - Decluttered layout: replaced crowded multi-card rows with an expansive Handheld Status Ribbon.
-  - Whole-card touch selection: tapping anywhere on a missing game card now toggles selection instantly for thumb navigation.
-  - Increased base typography to 15px/16px and enlarged headings/badges for handheld display legibility.
-  - Standardized all buttons, inputs, tabs, and checkboxes to minimum 44px-48px touch targets.
-  - Implemented collapsible live diagnostics drawer to maximize screen estate for game browsing.
-  - Added instant search clear button and touch response animations.
-- **Unified High-Definition App Branding:**
-  - Created and integrated a bespoke Xbox & Steam fusion emblem with neon green and cyan glow accents.
-  - Generated multi-resolution Windows `.ico` asset (256x256, 128x128, 64x64, 48x48, 32x32, 16x16).
-  - Uniform icon applied across NSIS Windows installer, portable executable, window titlebar, and in-app UI header.
+- **Touch & Branding Optimization:**
+  - Standardized 44px-48px touch targets for ROG Ally, Legion Go, and Windows handhelds.
+  - Integrated high-resolution unified application logo across executable, installer, titlebar, and UI.
 
 ### [v1.0.0] - 2026-10-12
-- **Initial Release:** Complete desktop application implementation for Windows.
-- **Steam Discovery Engine:** Full VDF and ACF parser supporting multiple library drives and custom folders.
-- **Xbox App LocalState Inspector:** SQLite and JSON manifest reader for `%LOCALAPPDATA%\Packages\Microsoft.GamingApp_8wekyb3d8bbwe\LocalState`.
-- **Deduplication Pipeline:** Multi-level title, AppID, and executable matching to eliminate duplicate entries.
-- **Safety & Injection Pipeline:** Automatic timestamped `.bak` backups and graceful Xbox process handling.
-- **Modern UI Dashboard:** Built with dark gaming aesthetics, Xbox green and Steam blue accents, live search, and activity console.
-- **Dual Packaging:** Configured `electron-builder` producing `XboxSteamBridge-portable.exe` and `XboxSteamBridge-Setup.exe`.
+- **Initial Release:**
+  - Complete Steam library scanner and PC Xbox App LocalState manifest injector.
+  - Automated backups, rollback manager, and deduplication engine.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
