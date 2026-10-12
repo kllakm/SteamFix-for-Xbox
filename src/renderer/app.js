@@ -18,7 +18,7 @@ function saveHiddenAppIds(set) {
 
 // State
 let appState = {
-  version: '1.3.3',
+  version: '1.3.4',
   currentTab: 'missing',
   steamRoots: [],
   libraries: [],
@@ -761,7 +761,7 @@ function renderEmptyState() {
     <h3 class="empty-title">${isNoGamesAtAll ? 'No Steam Games Detected' : 'No titles in this view'}</h3>
     <p class="empty-desc">
       ${isNoGamesAtAll 
-        ? "We couldn't detect any Steam libraries on default drives. Add a custom library folder or load sample titles to test Xbox synchronization."
+        ? "We couldn't detect any Steam libraries on default drives. Add a custom library folder to synchronize with Xbox."
         : "All games match your filters or none are currently available in this category."}
     </p>
     ${isNoGamesAtAll ? `
@@ -770,19 +770,13 @@ function renderEmptyState() {
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           <span>Add Folder</span>
         </button>
-        <button class="console-btn btn-cta" id="emptyBtnSamples">
-          <svg class="btn-icon-cta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span>Load Samples</span>
-        </button>
       </div>
     ` : ''}
   `;
 
   if (isNoGamesAtAll) {
     const fBtn = empty.querySelector('#emptyBtnFolder');
-    const sBtn = empty.querySelector('#emptyBtnSamples');
     if (fBtn) fBtn.addEventListener('click', () => btnAddFolder.click());
-    if (sBtn) sBtn.addEventListener('click', () => btnDemoFixture.click());
   }
 
   gamesContainer.appendChild(empty);
@@ -987,7 +981,8 @@ const controllerNav = {
       elements.push(selectAllCheckbox);
     }
     if (btnAddFolder) elements.push(btnAddFolder);
-    if (btnDemoFixture) elements.push(btnDemoFixture);
+    const emptyBtnFolder = document.getElementById('emptyBtnFolder');
+    if (emptyBtnFolder) elements.push(emptyBtnFolder);
     if (btnSync && !btnSync.disabled) elements.push(btnSync);
 
     // Game Cards

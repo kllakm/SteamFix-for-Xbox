@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.3.3-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.3.4-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-1A9FFF.svg?style=flat-square)](#handheld-experience)
@@ -149,6 +149,12 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+
+### [v1.3.4] - 2026-10-12
+- **Empty Library State Cleanup & Polish:**
+  - Removed remaining "Load Samples" CTA button and click listener from the "No Steam Games Detected" empty view.
+  - Updated empty state description text to remove references to loading sample titles, guiding users directly to add custom Steam library folders for Xbox synchronization.
+  - Linked controller and keyboard focus navigation directly to the "Add Folder" button when the library is empty.
 
 ### [v1.3.3] - 2026-10-12
 - **Title Hiding & Dedicated "Hidden" Category Tab:**
