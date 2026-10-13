@@ -2,10 +2,10 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.4.0-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.5.1-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
-[![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-1A9FFF.svg?style=flat-square)](#handheld-experience)
+[![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-00A2FF.svg?style=flat-square)](#handheld-experience)
 [![License](https://img.shields.io/badge/license-MIT-64748B.svg?style=flat-square)](LICENSE)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-yellow.svg?style=flat-square&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/enufstyle)
 
@@ -33,6 +33,7 @@ Designed from the ground up for handheld PCs (ASUS ROG Ally, Lenovo Legion Go, S
 
 - **Cinematic Console Aesthetics:** Roomy layout with breathing space, subtle ambient radial gradient background, and no cluttered card borders or nested boxes.
 - **Widescreen 16:9 Showcase Cards:** Spacious game showcase cards featuring authentic Steam CDN header banners, clear status indicators, and clean typographic metadata.
+- **Console Stepper & Navigation:** Full LB / RB section hopping, LT / RT category switching, and glowing cyan focus halos.
 - **Tactile Touch Targets:** Generous 44px-48px touch targets across tabs, buttons, checkboxes, and modals for easy navigation on 7-inch and 8-inch touchscreens.
 - **Full Screen Experience (FSE):** Dedicated FSE toggle button and shortcut (`F11` or controller `Menu` button) to expand into an immersive borderless console experience.
 
@@ -149,6 +150,41 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+
+### [v1.5.1] - 2026-10-13
+- **Universal Windows Controller Engine:**
+  - Full compatibility with all Windows-supported input devices: native XInput, DirectInput, Windows.Gaming.Input (WGI), Bluetooth gamepads, ASUS ROG Ally, Lenovo Legion Go, and virtual controllers.
+  - Chromium engine flags enabled for unthrottled gamepad polling and USB device access (`disable-usb-blocklist`, `enable-gamepad-button-axis-events`, `disable-background-timer-throttling`, `disable-renderer-backgrounding`).
+  - POV Hat switch decoding on generic DirectInput controllers across axes 9 and 4.
+  - Refined analog stick deadzone to `0.22` with repeat debounce for fluid spatial navigation.
+- **Intelligent Desktop vs Controller State Switching:**
+  - Default Desktop Mode: mouse cursor visible, controller button prompts HUD and bumper/trigger badges completely hidden, card halos disabled.
+  - Controller Mode: touching any controller button, D-pad, or stick immediately hides the mouse cursor (`cursor: none`), displays the docked footer controller legend HUD and bumper/trigger badges, and illuminates glowing cyan focus halos.
+  - Instant Desktop Mode Return: moving the mouse deliberately (>25px) or clicking immediately restores standard mouse cursor, hides controller button hints, and removes halos.
+  - Handheld gyro and stick mouse-emulation protection (700ms cooldown) prevents micro-jitter from prematurely kicking users out of controller mode.
+- **Full Screen Experience (FSE) Fix & Overhaul:**
+  - Seamless borderless fullscreen toggle via `F11`, header `FSE` button, and controller `Menu (Start)` button.
+  - Added dedicated `.fse-active` responsive layout stylesheet rules optimizing topbar, category strip, cards grid, and footer for handheld 16:9 / 16:10 displays.
+  - Robust IPC and HTML5 fullscreen fallback mechanism.
+- **Documentation & Terminology Cleanup:**
+  - Removed all references to external UI code names from the README and source comments.
+
+### [v1.5.0] - 2026-10-13
+- **Console-First Navigation UI Redesign:**
+  - Horizon Topbar overhauled with centered Section Navigation (`Library`, `Sync Center`, `Backups`, `Settings`) flanked by `[LB]` and `[RB]` shoulder bumper badges.
+  - Sub-Navigation category strip flanked by `[LT]` and `[RT]` trigger badges, featuring `Missing from Xbox`, `Synced`, `All Steam`, `Hidden`, and `Xbox Library` with count badges and signature glowing cyan underline indicator.
+  - Section Header strip (`My Games | Steam Bridge (X games)`) with capsule search bar, custom checkbox selector, and primary glowing CTA button.
+  - Docked Console Footer Base HUD displaying live connection dots, package state path, SemVer badge, and gamepad button prompt badges (`(A) Select`, `(B) Back`, `(X) Toggle All`, `(Y) Scan`, `(LB/RB) Section`, `(LT/RT) Category`, `(☰) FSE`).
+  - Enhanced controller focus halo with vibrant cyan glow ring and subtle scale lift on all interactive elements.
+- **Minimalist Brand Logo & Iconography Overhaul:**
+  - Redesigned application logo from scratch into an ultra-minimal, modern flat vector emblem fusing the Xbox crescent and Steam crank piston in emerald green and electric cyan gradient.
+  - Recompiled Windows application icon (`build/icon.ico`), installer graphics (`build/icon.png`), and in-app assets (`logo.png`, `logo-64.png`).
+  - Added minimalist platform badges directly onto game card headers (Steam and Xbox circular vector marks).
+  - Standardized all UI icons across buttons, search bar, modals, and status indicators with clean 2px vector strokes.
+- **Settings & Library Management Center:**
+  - Added dedicated Settings modal (`#settingsModal`) to inspect all detected Steam library directories.
+  - Interactive custom folder addition and removal with real-time automatic library rescanning.
+  - Reset option to unhide all previously hidden titles with a single click or button tap.
 
 ### [v1.4.0] - 2026-10-13
 - **Gamepad & Controller Engine Overhaul:**

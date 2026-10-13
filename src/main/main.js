@@ -8,6 +8,13 @@ const { checkXboxProcesses, closeXboxProcesses } = require('./processSafety');
 const { injectSteamGames, uninjectSteamGames, listBackups, restoreBackup } = require('./injector');
 const { createMockSteamLibrary } = require('./fixtureGenerator');
 
+// Configure Chromium command line switches for universal gamepad support
+app.commandLine.appendSwitch('disable-usb-blocklist');
+app.commandLine.appendSwitch('enable-gamepad-button-axis-events');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('enable-features', 'GamepadButtonAxisEvents,GamepadMultitouch');
+
 let mainWindow = null;
 
 function createWindow() {
@@ -23,10 +30,12 @@ function createWindow() {
     title: `XboxSteamBridge v${packageJson.version}`,
     backgroundColor: '#0a0e17',
     icon: iconPath,
+    fullScreenable: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      backgroundThrottling: false
     },
     autoHideMenuBar: true
   });
@@ -47,6 +56,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const { session } = require('electron');
+  if (session && session.defaultSession) {
+    session.defaultSession.setPermissionCheckHandler(() => true);
+    session.defaultSession.setDevicePermissionHandler(() => true);
+  }
+
   createWindow();
 
   app.on('activate', () => {
@@ -187,13 +202,18 @@ ipcMain.handle('create-demo-library', async () => {
 
 // IPC Handler: Full Screen Experience (FSE)
 ipcMain.handle('toggle-fullscreen', () => {
-  if (!mainWindow) return false;
-  const next = !mainWindow.isFullScreen();
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  const isFull = mainWindow.isFullScreen();
+  const next = !isFull;
   mainWindow.setFullScreen(next);
+  if (next) {
+    mainWindow.setAutoHideMenuBar(true);
+    mainWindow.setMenuBarVisibility(false);
+  }
   return next;
 });
 
 ipcMain.handle('get-fullscreen-state', () => {
-  if (!mainWindow) return false;
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
   return mainWindow.isFullScreen();
 });

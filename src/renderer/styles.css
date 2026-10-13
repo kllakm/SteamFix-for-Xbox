@@ -1,59 +1,53 @@
 /* ==========================================================================
-   XboxSteamBridge - Living Glass Console UI
-   Frosted Acrylic, Atmospheric Obsidian, Tactile Handheld & Desktop Experience
+   XboxSteamBridge - Console Navigation Design System
+   Precision Console Slate, Controller-First Horizon Navigation & Tactical Glass
    ========================================================================== */
 
 :root {
-  /* Obsidian & Living Glass Palette */
-  --bg-deep: #080c10;
-  --bg-acrylic: rgba(12, 18, 28, 0.75);
-  --bg-acrylic-card: rgba(15, 22, 35, 0.78);
-  --bg-card-hover: rgba(24, 34, 52, 0.9);
-  --bg-card-selected: rgba(16, 124, 16, 0.18);
-  --bg-glass-modal: rgba(8, 12, 20, 0.95);
-
-  /* Subtle High-End Borders */
-  --border-glass: rgba(255, 255, 255, 0.07);
-  --border-hover: rgba(255, 255, 255, 0.18);
-  --border-focus: #00e575;
+  /* Console Slate & Obsidian Palette */
+  --console-bg: #0d1419;
+  --console-surface: #141f27;
+  --console-surface-hover: #1c2b36;
+  --console-panel: rgba(20, 31, 39, 0.88);
+  --console-card: #16232c;
+  --console-card-hover: #1e2f3b;
+  --console-card-focus: #1d3242;
+  --console-footer-bg: #111a21;
 
   /* Console Accent Colors */
-  --xbox-emerald: #00e575;
+  --accent-cyan: #00a2ff;
+  --accent-cyan-glow: rgba(0, 162, 255, 0.45);
+  --accent-cyan-soft: rgba(0, 162, 255, 0.15);
+  --xbox-green: #00e575;
   --xbox-green-deep: #107c10;
   --xbox-glow: rgba(0, 229, 117, 0.4);
-  --xbox-glow-soft: rgba(0, 229, 117, 0.15);
-
   --steam-blue: #1a9fff;
-  --steam-cyan: #66c0f4;
-  --steam-glow: rgba(26, 159, 255, 0.35);
-
-  --status-warning: #f59e0b;
+  --status-warn: #f59e0b;
   --status-danger: #ef4444;
 
-  /* Typography Colors */
-  --text-primary: #f8fafc;
+  /* Console Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.15);
+  --border-active: #00a2ff;
+
+  /* Typography */
+  --text-main: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --text-dim: #475569;
-
-  /* Fonts */
-  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-code: 'JetBrains Mono', Consolas, monospace;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
 
   /* Radii */
   --radius-sm: 8px;
-  --radius-md: 14px;
+  --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-full: 9999px;
+  --radius-pill: 9999px;
 
-  /* Touch & Handheld Targets */
-  --touch-target-min: 44px;
-  --touch-target-hero: 46px;
-
-  /* Smooth Console Physics */
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-fast: 0.14s ease;
-  --transition-normal: 0.22s var(--ease-spring);
+  /* Transitions */
+  --ease-console: cubic-bezier(0.16, 1, 0.3, 1);
+  --trans-fast: 0.15s ease;
+  --trans-smooth: 0.22s var(--ease-console);
 }
 
 /* Base Reset */
@@ -66,27 +60,58 @@
 }
 
 html, body {
-  font-family: var(--font-main);
+  font-family: var(--font-sans);
   font-size: 15px;
-  background-color: var(--bg-deep);
-  color: var(--text-primary);
+  background-color: var(--console-bg);
+  color: var(--text-main);
   overflow: hidden;
   height: 100vh;
   -webkit-font-smoothing: antialiased;
   touch-action: manipulation;
 }
 
-/* Living Glass Atmospheric Canvas */
+/* Atmospheric Console Canvas */
 body {
   background: 
-    radial-gradient(ellipse 1100px 540px at 50% -100px, rgba(0, 229, 117, 0.08) 0%, rgba(26, 159, 255, 0.03) 50%, transparent 100%),
+    radial-gradient(ellipse 1200px 600px at 50% -80px, rgba(0, 162, 255, 0.08) 0%, rgba(0, 229, 117, 0.03) 45%, transparent 100%),
     radial-gradient(circle at 100% 100%, rgba(16, 124, 16, 0.04) 0%, transparent 40%),
-    var(--bg-deep);
+    var(--console-bg);
 }
 
-/* Hide OS cursor when gamepad navigation is actively engaged */
-body.gamepad-active {
+/* ==========================================================================
+   Desktop vs Controller Mode State Rules
+   ========================================================================== */
+
+/* 1. Default Desktop Mode: cursor visible, controller hints & halos hidden */
+.footer-controller-legend {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(4px);
+}
+
+.controller-badge {
+  display: none !important;
+  opacity: 0;
+}
+
+/* 2. Controller Mode Active: cursor hidden across all elements, hints shown */
+body.controller-mode,
+body.controller-mode * {
   cursor: none !important;
+}
+
+body.controller-mode .footer-controller-legend {
+  display: flex !important;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+body.controller-mode .controller-badge {
+  display: inline-flex !important;
+  opacity: 1;
 }
 
 /* App Viewport Container */
@@ -99,19 +124,19 @@ body.gamepad-active {
 }
 
 /* ==========================================================================
-   1. Tier 1: System Topbar (Horizon Bar)
+   1. Tier 1: Console Topbar (Header Horizon with LB / RB Badges)
    ========================================================================== */
 .console-topbar {
-  height: 56px;
-  min-height: 56px;
+  height: 60px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
-  background: var(--bg-acrylic);
+  padding: 0 28px;
+  background: var(--console-panel);
   backdrop-filter: blur(24px);
-  border-bottom: 1px solid var(--border-glass);
-  z-index: 20;
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 25;
   flex-shrink: 0;
 }
 
@@ -127,8 +152,8 @@ body.gamepad-active {
   height: 36px;
   border-radius: var(--radius-md);
   object-fit: cover;
-  box-shadow: 0 0 16px rgba(0, 229, 117, 0.3);
-  border: 1px solid rgba(0, 229, 117, 0.35);
+  box-shadow: 0 0 14px rgba(0, 162, 255, 0.3);
+  border: 1px solid rgba(0, 162, 255, 0.35);
   flex-shrink: 0;
 }
 
@@ -140,27 +165,82 @@ body.gamepad-active {
 }
 
 .console-title {
-  font-size: 1.18rem;
+  font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #ffffff;
   white-space: nowrap;
 }
 
 .console-badge {
-  font-family: var(--font-code);
-  font-size: 0.74rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   font-weight: 700;
   padding: 3px 8px;
-  border-radius: var(--radius-full);
-  background: rgba(0, 229, 117, 0.12);
-  color: var(--xbox-emerald);
-  border: 1px solid rgba(0, 229, 117, 0.3);
+  border-radius: var(--radius-pill);
+  background: var(--accent-cyan-soft);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 162, 255, 0.3);
   white-space: nowrap;
 }
 
+/* Section Navigation (Centered LB / RB Stepper) */
+.console-section-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.section-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-nav-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.94rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all var(--trans-fast);
+  outline: none;
+}
+
+.section-nav-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.section-nav-btn.active {
+  color: #ffffff;
+}
+
+.section-nav-btn .nav-indicator-bar {
+  display: block;
+  width: 0;
+  height: 3px;
+  background: var(--accent-cyan);
+  border-radius: var(--radius-pill);
+  margin-top: 4px;
+  transition: width 0.2s ease;
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.section-nav-btn.active .nav-indicator-bar {
+  width: 22px;
+}
+
+/* Topbar Right Controls */
 .topbar-right {
   display: flex;
   align-items: center;
@@ -168,15 +248,16 @@ body.gamepad-active {
   flex-shrink: 0;
 }
 
-/* Process Indicator Pill */
-.status-indicator {
+/* Status Indicator Pills */
+.status-indicator,
+.gamepad-status-pill {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-glass);
+  border: 1px solid var(--border-subtle);
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -184,26 +265,38 @@ body.gamepad-active {
   flex-shrink: 0;
 }
 
-.status-dot {
+.status-dot,
+.gamepad-indicator-dot {
   width: 8px;
   height: 8px;
   min-width: 8px;
   min-height: 8px;
   border-radius: 50%;
-  background: var(--xbox-emerald);
-  box-shadow: 0 0 8px var(--xbox-emerald);
+  background: var(--xbox-green);
+  box-shadow: 0 0 8px var(--xbox-green);
   flex-shrink: 0;
 }
 
 .status-dot.running {
-  background: var(--status-warning);
-  box-shadow: 0 0 8px var(--status-warning);
+  background: var(--status-warn);
+  box-shadow: 0 0 8px var(--status-warn);
   animation: pulseWarning 1.8s infinite ease-in-out;
 }
 
-@keyframes pulseWarning {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.6; }
+.gamepad-status-pill .gamepad-indicator-dot {
+  background: var(--text-muted);
+  box-shadow: none;
+}
+
+.gamepad-status-pill.active {
+  color: #ffffff;
+  background: var(--accent-cyan-soft);
+  border-color: rgba(0, 162, 255, 0.35);
+}
+
+.gamepad-status-pill.active .gamepad-indicator-dot {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan);
 }
 
 .btn-kill {
@@ -217,81 +310,12 @@ body.gamepad-active {
   cursor: pointer;
   margin-left: 4px;
   white-space: nowrap;
-  transition: all var(--transition-fast);
+  transition: all var(--trans-fast);
 }
 
 .btn-kill:hover {
-  background: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.4);
   color: #fff;
-}
-
-/* Controller / Gamepad Status Indicator Pill */
-.gamepad-status-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-glass);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap !important;
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-.gamepad-status-pill.active {
-  background: rgba(0, 229, 117, 0.12);
-  border-color: rgba(0, 229, 117, 0.4);
-  color: var(--xbox-emerald);
-}
-
-.gamepad-indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #64748b;
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-.gamepad-status-pill.active .gamepad-indicator-dot {
-  background: var(--xbox-emerald);
-  box-shadow: 0 0 8px var(--xbox-emerald);
-}
-
-.btn-danger {
-  background: rgba(239, 68, 68, 0.85);
-  color: #ffffff;
-  border: 1px solid rgba(239, 68, 68, 1);
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-  background: #ef4444;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
-}
-
-.modal-badge-warn {
-  background: rgba(239, 68, 68, 0.15) !important;
-  border: 1px solid rgba(239, 68, 68, 0.3) !important;
-}
-
-.modal-warning-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 16px;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-  border-radius: var(--radius-md);
-  font-size: 0.84rem;
-  color: #fde68a;
-  line-height: 1.45;
-  margin-top: 10px;
 }
 
 .utility-actions {
@@ -302,22 +326,30 @@ body.gamepad-active {
 }
 
 /* ==========================================================================
-   2. Tier 2: Dedicated Console Navigation Strip (Clean Horizon Tabs)
+   2. Tier 2: Sub-Navigation Category Strip (LT / RT Trigger Badges)
    ========================================================================== */
-.console-nav-strip {
+.console-subnav-strip {
   display: flex;
   align-items: center;
-  padding: 8px 32px;
-  background: rgba(10, 15, 24, 0.6);
-  border-bottom: 1px solid var(--border-glass);
-  z-index: 15;
+  justify-content: center;
+  padding: 8px 28px;
+  background: rgba(16, 25, 33, 0.7);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 20;
   flex-shrink: 0;
+}
+
+.subnav-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 100%;
 }
 
 .console-tabs {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -327,206 +359,170 @@ body.gamepad-active {
 }
 
 .nav-tab {
+  position: relative;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);
-  font-family: var(--font-main);
-  font-size: 0.94rem;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
   font-weight: 700;
   padding: 8px 18px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  transition: all var(--transition-fast);
-  min-height: var(--touch-target-min);
+  gap: 8px;
+  transition: all var(--trans-fast);
   outline: none;
   white-space: nowrap !important;
   flex-shrink: 0;
 }
 
-.nav-tab .tab-label {
-  white-space: nowrap !important;
-}
-
 .nav-tab:hover {
-  color: var(--text-primary);
+  color: #ffffff;
   background: rgba(255, 255, 255, 0.05);
 }
 
 .nav-tab.active {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(0, 229, 117, 0.45);
-  box-shadow: 0 0 16px rgba(0, 229, 117, 0.16);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .tab-count {
-  font-family: var(--font-code);
-  font-size: 0.76rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-  flex-shrink: 0;
+  font-size: 0.74rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
 }
 
 .nav-tab.active .tab-count {
-  background: rgba(0, 229, 117, 0.22);
-  color: var(--xbox-emerald);
+  background: var(--accent-cyan);
+  color: #000000;
 }
 
-/* ==========================================================================
-   3. Console Action Buttons (Living Glass Frosted Controls)
-   ========================================================================== */
-.console-btn {
+/* Console Underline Bar for Active Category */
+.tab-indicator-pill {
+  position: absolute;
+  bottom: -4px;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  background: var(--accent-cyan);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 10px var(--accent-cyan);
+  display: none;
+}
+
+.nav-tab.active .tab-indicator-pill {
+  display: block;
+}
+
+/* Controller Badges (LB, RB, LT, RT) */
+.controller-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  height: var(--touch-target-min);
-  border-radius: var(--radius-full);
-  font-family: var(--font-main);
-  font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  white-space: nowrap !important;
-  flex-shrink: 0;
-  outline: none;
-}
-
-.console-btn:active {
-  transform: scale(0.96);
-}
-
-.btn-ghost {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-glass);
-  color: var(--text-secondary);
-}
-
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border-color: var(--border-hover);
-}
-
-.btn-primary {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-}
-
-.btn-primary:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.28);
-}
-
-/* Hero CTA Button: High-End Xbox Emerald Glow */
-.btn-cta {
-  background: linear-gradient(135deg, #00e575 0%, #107c10 100%);
-  color: #031508;
-  height: var(--touch-target-hero);
-  padding: 0 22px;
+  font-family: var(--font-mono);
   font-weight: 800;
-  font-size: 0.94rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 18px rgba(0, 229, 117, 0.35);
-  letter-spacing: -0.01em;
-}
-
-.btn-cta:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1ff08a 0%, #128e12 100%);
-  box-shadow: 0 6px 24px rgba(0, 229, 117, 0.5);
-  transform: translateY(-1px);
-}
-
-.btn-cta:disabled {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-muted);
-  box-shadow: none;
-  border-color: transparent;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-icon {
-  width: 17px;
-  height: 17px;
+  font-size: 0.74rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  padding: 2px 7px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
 }
 
-.btn-icon-cta {
-  width: 19px;
-  height: 19px;
-  stroke: #031508;
-  flex-shrink: 0;
+.badge-bumper {
+  padding: 3px 9px;
+  letter-spacing: 0.04em;
 }
 
-.spin-icon.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  100% { transform: rotate(360deg); }
+.badge-trigger {
+  padding: 3px 9px;
+  letter-spacing: 0.04em;
 }
 
 /* ==========================================================================
-   4. Main Workspace & Contextual Action Bar
+   3. Main Workspace & Section Action Bar
    ========================================================================== */
 .console-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
+  padding: 0 28px;
 }
 
 .console-action-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 32px;
+  padding: 16px 0 14px 0;
   gap: 16px;
-  flex-wrap: wrap;
   flex-shrink: 0;
 }
 
 .action-bar-left {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-shrink: 0;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.section-headline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.section-separator {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.section-count {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
 }
 
 .selection-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 18px;
+  gap: 10px;
+  padding: 6px 14px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-full);
-  white-space: nowrap !important;
-  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
 }
 
 .console-checkbox-label {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
+  font-size: 0.88rem;
   font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  white-space: nowrap !important;
-  flex-shrink: 0;
+  color: var(--text-main);
 }
 
 .console-checkbox-label input[type="checkbox"] {
@@ -534,628 +530,664 @@ body.gamepad-active {
 }
 
 .custom-checkbox {
-  width: 22px !important;
-  height: 22px !important;
-  min-width: 22px !important;
-  min-height: 22px !important;
-  border-radius: 6px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.05);
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
-  flex-shrink: 0 !important;
+  transition: all var(--trans-fast);
 }
 
 .console-checkbox-label input[type="checkbox"]:checked + .custom-checkbox {
-  background: var(--xbox-emerald);
-  border-color: var(--xbox-emerald);
-  box-shadow: 0 0 10px rgba(0, 229, 117, 0.4);
+  background: var(--xbox-green);
+  border-color: var(--xbox-green);
+  box-shadow: 0 0 8px var(--xbox-green);
 }
 
 .console-checkbox-label input[type="checkbox"]:checked + .custom-checkbox::after {
-  content: '';
-  width: 5px;
-  height: 10px;
-  border: solid #031508;
-  border-width: 0 2.5px 2.5px 0;
-  transform: rotate(45deg) translate(-1px, -1px);
+  content: '✓';
+  color: #000000;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .selection-divider {
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
 .selection-note {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
-  font-weight: 500;
-  white-space: nowrap !important;
-  flex-shrink: 0;
 }
 
+/* Action Bar Right Controls */
 .action-bar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-/* Console Search Bar */
 .console-search {
   position: relative;
   display: flex;
   align-items: center;
-  width: 220px;
-  transition: width var(--transition-fast);
-  flex-shrink: 1;
+  background: var(--console-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 0 14px;
+  width: 260px;
+  height: 42px;
+  transition: all var(--trans-fast);
 }
 
 .console-search:focus-within {
-  width: 270px;
+  width: 310px;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px var(--accent-cyan-soft);
 }
 
 .search-svg {
-  position: absolute;
-  left: 14px;
   width: 16px;
   height: 16px;
   color: var(--text-muted);
-  pointer-events: none;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .console-search input {
-  width: 100%;
-  height: var(--touch-target-min);
-  padding: 0 38px 0 40px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-glass);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-primary);
-  font-family: var(--font-main);
-  font-size: 0.88rem;
+  background: transparent;
+  border: none;
   outline: none;
-  transition: all var(--transition-fast);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  width: 100%;
 }
 
-.console-search input:focus {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 229, 117, 0.5);
-  box-shadow: 0 0 14px rgba(0, 229, 117, 0.2);
+.console-search input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-clear {
-  position: absolute;
-  right: 12px;
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 1.2rem;
   cursor: pointer;
-  padding: 4px;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 4px;
 }
 
 .search-clear:hover {
   color: #ffffff;
 }
 
+/* Universal Buttons */
+.console-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--trans-fast);
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.console-btn.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.console-btn.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-medium);
+  color: #ffffff;
+}
+
+.console-btn.btn-primary {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.console-btn.btn-primary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.console-btn.btn-cta {
+  background: linear-gradient(135deg, #00c2ff 0%, #0084ff 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 162, 255, 0.35);
+}
+
+.console-btn.btn-cta:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0, 162, 255, 0.55);
+}
+
+.console-btn.btn-cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.console-btn.btn-danger {
+  background: rgba(239, 68, 68, 0.85);
+  color: #ffffff;
+  border: none;
+}
+
+.console-btn.btn-danger:hover {
+  background: #ef4444;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.45);
+}
+
+.console-btn.btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+}
+
+.btn-icon,
+.btn-icon-cta {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.spin-icon {
+  animation: spin 1.2s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ==========================================================================
-   5. Games Showcase Grid (Spacious, Roomy, 16:9 Cinematic Cards)
+   4. Games Library Showcase Grid (16:9 Showcase Tiles)
    ========================================================================== */
 .games-showcase {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding: 16px 32px 36px 32px;
+  padding-bottom: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.games-showcase::-webkit-scrollbar {
+  width: 6px;
+}
+
+.games-showcase::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-pill);
+}
+
+.games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 22px;
-  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
 }
 
 @media (max-width: 900px) {
-  .games-showcase {
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    padding: 12px 18px 28px 18px;
+  .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
   }
 }
 
 @media (max-width: 640px) {
-  .games-showcase {
+  .games-grid {
     grid-template-columns: 1fr;
-    padding: 10px 14px 24px 14px;
-    gap: 14px;
   }
 }
 
-/* Sleek Minimalist Console Scrollbar */
-.games-showcase::-webkit-scrollbar {
-  width: 8px;
-}
-
-.games-showcase::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.games-showcase::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-full);
-}
-
-.games-showcase::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Game Card */
+/* Console Game Card */
 .game-card {
   position: relative;
-  background: var(--bg-acrylic-card);
-  border: 1px solid var(--border-glass);
+  background: var(--console-card);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
-  min-height: 330px;
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-fast);
+  transition: all var(--trans-smooth);
+  cursor: pointer;
   outline: none;
-  backdrop-filter: blur(12px);
 }
 
 .game-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-hover);
-  transform: translateY(-4px) scale(1.015);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  background: var(--console-card-hover);
+  border-color: var(--border-medium);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
-/* Game Card Selected State */
 .game-card.selected {
-  background: var(--bg-card-selected);
-  border-color: rgba(0, 229, 117, 0.5);
-  box-shadow: 0 4px 20px rgba(0, 229, 117, 0.15);
+  border-color: rgba(0, 162, 255, 0.6);
+  background: var(--console-card-focus);
 }
 
-/* Controller / Gamepad Focus Ring (Distinct Xbox Emerald Halo Glow) */
-.game-card.gamepad-focused,
-.console-btn.gamepad-focused,
-.nav-tab.gamepad-focused,
-#selectAllCheckbox.gamepad-focused,
-.btn-restore.gamepad-focused,
-.card-action-btn.gamepad-focused,
-.card-checkbox.gamepad-focused,
-#searchInput.gamepad-focused,
-.search-clear.gamepad-focused,
-.btn-kill.gamepad-focused,
-.gamepad-status-pill.gamepad-focused {
-  outline: none !important;
-  border-color: var(--xbox-emerald) !important;
-  transform: translateY(-3px) scale(1.02) !important;
-  box-shadow: 0 0 0 3px var(--xbox-emerald), 0 10px 30px var(--xbox-glow) !important;
+/* Console Focus Glow Box */
+body.controller-mode .game-card.gamepad-focused,
+.game-card:focus-visible {
+  border-color: var(--accent-cyan) !important;
+  box-shadow: 0 0 0 2.5px var(--accent-cyan), 0 12px 32px var(--accent-cyan-glow) !important;
+  transform: scale(1.025) translateY(-2px) !important;
   z-index: 10;
 }
 
-/* Card Header Artwork (Authentic 16:9 widescreen presentation) */
+/* Card Artwork Header (16:9 Proportion with Dark Vignette) */
 .card-header-art {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  min-height: 175px;
-  background: #060910;
+  min-height: 170px;
   overflow: hidden;
+  background: #000000;
 }
 
 .card-header-art img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  transition: transform 0.4s ease;
+  transition: transform 0.3s ease;
 }
 
-.game-card:hover .card-header-art img,
-.game-card.gamepad-focused .card-header-art img {
-  transform: scale(1.05);
+.game-card:hover .card-header-art img {
+  transform: scale(1.04);
 }
 
-/* Gradient shadow at bottom of image */
+/* Dark Bottom Vignette Gradient */
 .card-header-art::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(14, 20, 34, 0.85) 100%);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(to top, rgba(13, 20, 25, 0.95) 0%, rgba(13, 20, 25, 0.4) 60%, transparent 100%);
   pointer-events: none;
 }
 
-/* Card Selection Checkbox on Image */
-.card-checkbox {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  accent-color: var(--xbox-emerald);
-  z-index: 4;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
-}
-
-/* Card Status Pill */
+/* Status Pill in Corner */
 .card-status-pill {
   position: absolute;
   top: 12px;
-  right: 12px;
-  z-index: 4;
+  left: 12px;
   padding: 4px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 5;
   backdrop-filter: blur(10px);
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .pill-missing {
-  background: rgba(245, 158, 11, 0.3);
+  background: rgba(0, 162, 255, 0.25);
+  color: #60c5ff;
+  border: 1px solid rgba(0, 162, 255, 0.5);
+}
+
+.pill-synced {
+  background: rgba(0, 229, 117, 0.25);
+  color: #79f7ba;
+  border: 1px solid rgba(0, 229, 117, 0.5);
+}
+
+.pill-hidden {
+  background: rgba(245, 158, 11, 0.25);
   color: #fde68a;
   border: 1px solid rgba(245, 158, 11, 0.5);
 }
 
-.pill-synced {
-  background: rgba(0, 229, 117, 0.3);
-  color: #86efac;
-  border: 1px solid rgba(0, 229, 117, 0.5);
+.pill-native {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.pill-native {
-  background: rgba(26, 159, 255, 0.3);
-  color: #93c5fd;
-  border: 1px solid rgba(26, 159, 255, 0.5);
+/* Platform Provider Frosted Disc Badge (Bottom Right of Artwork) */
+.card-platform-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(13, 20, 25, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.card-platform-badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Selection Checkbox in Card Header */
+.card-checkbox {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+  z-index: 8;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
 /* Card Body */
 .card-body {
-  padding: 16px;
+  padding: 14px 16px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   flex: 1;
-  min-height: 0;
 }
 
 .game-title {
-  font-size: 1.08rem;
+  font-size: 1.02rem;
   font-weight: 700;
-  color: var(--text-primary);
   line-height: 1.35;
+  color: #ffffff;
+  margin-bottom: 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  white-space: normal;
-  word-break: break-word;
   min-height: 2.7em;
 }
 
 .game-meta {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-  font-size: 0.8rem;
-  font-family: var(--font-code);
+  gap: 8px;
+  font-size: 0.76rem;
+  font-family: var(--font-mono);
   color: var(--text-muted);
+  margin-bottom: 12px;
 }
 
 .match-reason-box {
-  font-size: 0.76rem;
-  padding: 5px 9px;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-secondary);
-  border-left: 2px solid var(--xbox-emerald);
+  font-size: 0.74rem;
+  padding: 4px 8px;
+  background: rgba(0, 229, 117, 0.08);
+  border: 1px solid rgba(0, 229, 117, 0.2);
+  color: #86efac;
+  border-radius: 6px;
+  margin-bottom: 10px;
 }
 
 .card-footer-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 10px;
   margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 8px;
 }
 
 .game-path {
   font-size: 0.74rem;
-  font-family: var(--font-code);
-  color: var(--text-dim);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
+  max-width: 170px;
 }
 
 .card-actions-group {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
 }
 
 .card-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-family: var(--font-main);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
   font-size: 0.76rem;
   font-weight: 700;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  border: 1px solid var(--border-glass);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-  flex-shrink: 0;
-  outline: none;
+  transition: all var(--trans-fast);
 }
 
 .card-action-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  border-color: var(--border-hover);
 }
 
 .card-action-btn.btn-uninject {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
   color: #fca5a5;
 }
 
 .card-action-btn.btn-uninject:hover {
-  background: rgba(239, 68, 68, 0.28);
-  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.3);
   color: #ffffff;
-}
-
-.card-action-btn.btn-unhide {
-  background: rgba(0, 229, 117, 0.15);
-  border-color: rgba(0, 229, 117, 0.35);
-  color: var(--xbox-emerald);
-}
-
-.card-action-btn.btn-unhide:hover {
-  background: rgba(0, 229, 117, 0.28);
-  color: #ffffff;
-}
-
-.pill-hidden {
-  background: rgba(148, 163, 184, 0.2);
-  color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 /* ==========================================================================
-   6. Refined Empty State (Compact, Proportional Aesthetic)
-   Fixed size: 60px badge, 28px icon, NEVER blown up or distorted!
+   5. Empty State Display
    ========================================================================== */
 .empty-state {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 60px 20px;
   text-align: center;
-  padding: 60px 24px;
-  gap: 12px;
-  margin: auto;
-  max-width: 500px;
+  max-width: 480px;
+  margin: 40px auto;
+  background: var(--console-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
 
-.empty-icon-wrap {
-  width: 60px;
-  height: 60px;
-  min-width: 60px;
-  min-height: 60px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-glass);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 6px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  flex-shrink: 0;
-}
-
-.empty-icon,
-.empty-state-icon {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  max-width: 28px !important;
-  max-height: 28px !important;
+.empty-icon {
+  width: 48px;
+  height: 48px;
   color: var(--text-muted);
-  stroke: currentColor;
-  flex-shrink: 0;
+  margin-bottom: 16px;
 }
 
-.empty-title {
-  font-size: 1.15rem;
+.empty-state h3 {
+  font-size: 1.2rem;
   font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+  color: #ffffff;
+  margin-bottom: 8px;
 }
 
-.empty-desc {
+.empty-state p {
   font-size: 0.88rem;
-  line-height: 1.5;
   color: var(--text-secondary);
-}
-
-.empty-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  line-height: 1.5;
+  margin-bottom: 20px;
 }
 
 /* ==========================================================================
-   7. Sleek Console Footer
+   6. Docked Console Footer (Base HUD Bar with Controller Prompts)
    ========================================================================== */
 .console-footer {
-  height: 36px;
+  height: 48px;
+  min-height: 48px;
+  background: var(--console-footer-bg);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
-  background: var(--bg-acrylic);
-  border-top: 1px solid var(--border-glass);
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  padding: 0 28px;
+  z-index: 30;
   flex-shrink: 0;
 }
 
-.footer-status {
+.footer-status-pane {
   display: flex;
   align-items: center;
   gap: 10px;
-  white-space: nowrap;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
 }
 
-.footer-dot {
-  color: var(--text-dim);
+.footer-dot-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--xbox-green);
+  box-shadow: 0 0 6px var(--xbox-green);
 }
 
-.footer-meta .version-label {
-  font-family: var(--font-code);
-  font-weight: 600;
-  white-space: nowrap;
+.footer-separator {
+  color: var(--text-muted);
 }
 
-/* ==========================================================================
-   8. Controller Navigation Helper HUD Layer
-   ========================================================================== */
-.controller-hints-hud {
-  position: fixed;
-  bottom: 22px;
-  right: 28px;
-  z-index: 100;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+.version-label {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
-body.gamepad-active .controller-hints-hud,
-.controller-hints-hud.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.hud-capsule {
+/* Gamepad Prompt Legend Pills */
+.footer-controller-legend {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 8px 18px;
-  background: rgba(8, 12, 20, 0.88);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-full);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
 }
 
 .hud-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .btn-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 4px;
-  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-weight: 900;
   font-size: 0.72rem;
-  font-weight: 800;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #000000;
   line-height: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.btn-a { background: #107c10; color: #fff; }
-.btn-b { background: #dc2626; color: #fff; }
-.btn-x { background: #2563eb; color: #fff; }
-.btn-y { background: #eab308; color: #000; }
-.btn-bumper { background: rgba(255,255,255,0.2); color: #fff; border-radius: 6px; font-size: 0.68rem; padding: 2px 6px; }
-.btn-menu { background: rgba(255,255,255,0.2); color: #fff; }
+.btn-badge.btn-a {
+  background: #00e575;
+}
+
+.btn-badge.btn-b {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.btn-badge.btn-x {
+  background: #00a2ff;
+  color: #ffffff;
+}
+
+.btn-badge.btn-y {
+  background: #f59e0b;
+}
+
+.btn-badge.btn-bumper,
+.btn-badge.btn-trigger,
+.btn-badge.btn-menu {
+  width: auto;
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.68rem;
+}
 
 /* ==========================================================================
-   9. Modals (Living Glass Acrylic)
+   7. Modals & Dialogs (Console Glass Panel Styling)
    ========================================================================== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(5, 10, 15, 0.82);
   backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 24px;
+  z-index: 100;
+  padding: 20px;
 }
 
 .modal-card {
-  background: var(--bg-glass-modal);
-  border: 1px solid var(--border-hover);
-  border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 540px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+  max-width: 500px;
+  background: var(--console-panel);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: modalPop 0.25s var(--ease-spring);
+  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-card.modal-lg {
   max-width: 680px;
 }
 
-@keyframes modalPop {
-  0% { transform: scale(0.95); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .modal-header {
-  padding: 24px 28px 18px 28px;
+  padding: 20px 24px 16px 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  border-bottom: 1px solid var(--border-glass);
+  gap: 14px;
+  border-bottom: 1px solid var(--border-subtle);
   position: relative;
 }
 
 .modal-icon-badge {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-md);
-  background: rgba(0, 229, 117, 0.1);
+  background: rgba(0, 229, 117, 0.12);
   border: 1px solid rgba(0, 229, 117, 0.3);
   display: flex;
   align-items: center;
@@ -1163,154 +1195,234 @@ body.gamepad-active .controller-hints-hud,
   flex-shrink: 0;
 }
 
+.modal-icon-badge.modal-badge-warn {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
 .modal-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex: 1;
 }
 
 .modal-title {
-  font-size: 1.25rem;
+  font-size: 1.18rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #ffffff;
 }
 
 .modal-subtitle {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
 .modal-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
   background: transparent;
   border: none;
   color: var(--text-muted);
   font-size: 1.5rem;
   cursor: pointer;
   line-height: 1;
+  padding: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .modal-close:hover {
-  color: #fff;
+  color: #ffffff;
 }
 
 .modal-body {
-  padding: 24px 28px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .modal-text {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  color: var(--text-main);
   line-height: 1.5;
-  color: var(--text-secondary);
 }
 
-.modal-text strong {
-  color: var(--text-primary);
-}
-
-.safety-box {
+.safety-box,
+.modal-warning-box,
+.warning-box {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px;
-  background: rgba(0, 229, 117, 0.06);
-  border: 1px solid rgba(0, 229, 117, 0.2);
+  padding: 14px 16px;
   border-radius: var(--radius-md);
-  font-size: 0.86rem;
-  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
-.safety-box strong {
-  color: var(--xbox-emerald);
-  display: block;
-  margin-bottom: 2px;
+.safety-box {
+  background: rgba(0, 229, 117, 0.08);
+  border: 1px solid rgba(0, 229, 117, 0.25);
+  color: #d1fae5;
 }
 
-.safety-box p {
-  font-size: 0.82rem;
+.safety-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
+.modal-warning-box,
 .warning-box {
-  padding: 12px 16px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: var(--radius-md);
-  font-size: 0.85rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
   color: #fde68a;
 }
 
 .modal-footer {
-  padding: 18px 28px;
+  padding: 16px 24px;
   background: rgba(0, 0, 0, 0.2);
-  border-top: 1px solid var(--border-glass);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
 }
 
-/* Backups list in modal */
-.backups-list {
+/* Settings Modal Elements */
+.settings-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 380px;
-  overflow-y: auto;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.backup-row {
+.settings-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.settings-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-glass);
+}
+
+.settings-section h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  background: var(--console-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
 }
 
-.backup-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.settings-row strong {
+  font-size: 0.88rem;
+  color: #ffffff;
+  display: block;
+  margin-bottom: 2px;
 }
 
-.backup-filename {
-  font-family: var(--font-code);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-primary);
+.settings-row p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.libraries-list-container,
+.backups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.library-item,
+.backup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--console-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.library-path,
+.backup-name {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: #ffffff;
 }
 
 .backup-meta {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
+  margin-top: 2px;
 }
 
-.btn-restore {
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
-  background: rgba(26, 159, 255, 0.15);
-  border: 1px solid rgba(26, 159, 255, 0.3);
-  color: var(--steam-cyan);
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--transition-fast);
+/* Controller Focus Halo for Interactive Elements */
+body.controller-mode .section-nav-btn.gamepad-focused,
+body.controller-mode .nav-tab.gamepad-focused,
+body.controller-mode .console-btn.gamepad-focused,
+body.controller-mode .card-action-btn.gamepad-focused,
+body.controller-mode .modal-close.gamepad-focused,
+body.controller-mode .touch-checkbox.gamepad-focused,
+.section-nav-btn:focus-visible,
+.nav-tab:focus-visible,
+.console-btn:focus-visible,
+.card-action-btn:focus-visible,
+.modal-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-cyan), 0 0 18px var(--accent-cyan-glow) !important;
+  border-color: var(--accent-cyan) !important;
 }
 
-.btn-restore:hover {
-  background: rgba(26, 159, 255, 0.3);
-  color: #fff;
+/* ==========================================================================
+   Full Screen Experience (FSE) Responsive Optimizations
+   ========================================================================== */
+body.fse-active {
+  user-select: none;
 }
 
-.empty-backups {
-  text-align: center;
-  padding: 30px;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+body.fse-active .console-app {
+  height: 100vh;
+  width: 100vw;
+  border-radius: 0;
+}
+
+body.fse-active .console-topbar {
+  height: 52px;
+  min-height: 52px;
+  padding: 0 24px;
+  background: rgba(10, 14, 23, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.fse-active .console-subnav-strip {
+  height: 46px;
+  min-height: 46px;
+  padding: 0 24px;
+  background: rgba(14, 20, 32, 0.92);
+}
+
+body.fse-active .console-main-canvas {
+  padding: 18px 24px;
+}
+
+body.fse-active .games-showcase {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+body.fse-active .console-footer {
+  height: 46px;
+  min-height: 46px;
+  padding: 0 24px;
+  background: rgba(10, 14, 23, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

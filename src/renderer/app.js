@@ -18,8 +18,9 @@ function saveHiddenAppIds(set) {
 
 // State
 let appState = {
-  version: '1.4.0',
+  version: '1.5.1',
   currentTab: 'missing',
+  currentSection: 'library',
   steamRoots: [],
   libraries: [],
   games: [],
@@ -73,18 +74,33 @@ const searchClearBtn = document.getElementById('searchClearBtn');
 const gamepadStatusPill = document.getElementById('gamepadStatusPill');
 const gamepadStatusText = document.getElementById('gamepadStatusText');
 
-// Modal Elements
+// Console Navigation Elements
+const navBtnLibrary = document.getElementById('navBtnLibrary');
+const navBtnSync = document.getElementById('navBtnSync');
+const navBtnBackups = document.getElementById('navBtnBackups');
+const navBtnSettings = document.getElementById('navBtnSettings');
+const badgeLB = document.getElementById('badgeLB');
+const badgeRB = document.getElementById('badgeRB');
+const badgeLT = document.getElementById('badgeLT');
+const badgeRT = document.getElementById('badgeRT');
+const sectionSubtitle = document.getElementById('sectionSubtitle');
+const sectionCount = document.getElementById('sectionCount');
+
+// Modal Elements: Confirm
 const confirmModal = document.getElementById('confirmModal');
 const modalGameCount = document.getElementById('modalGameCount');
 const modalProcessWarning = document.getElementById('modalProcessWarning');
 const btnCancelSync = document.getElementById('btnCancelSync');
 const btnProceedSync = document.getElementById('btnProceedSync');
+const btnCloseConfirm = document.getElementById('btnCloseConfirm');
 
+// Modal Elements: Backups
 const backupsModal = document.getElementById('backupsModal');
 const btnCloseBackups = document.getElementById('btnCloseBackups');
+const btnCloseBackupsFooter = document.getElementById('btnCloseBackupsFooter');
 const backupsList = document.getElementById('backupsList');
 
-// Uninject Modal Elements
+// Modal Elements: Uninject
 const uninjectModal = document.getElementById('uninjectModal');
 const uninjectTitleName = document.getElementById('uninjectTitleName');
 const btnCloseUninject = document.getElementById('btnCloseUninject');
@@ -92,6 +108,16 @@ const btnCancelUninject = document.getElementById('btnCancelUninject');
 const btnProceedUninject = document.getElementById('btnProceedUninject');
 let pendingUninjectAppId = null;
 let pendingUninjectTitle = '';
+
+// Modal Elements: Settings & Folders
+const settingsModal = document.getElementById('settingsModal');
+const btnCloseSettings = document.getElementById('btnCloseSettings');
+const btnCloseSettingsFooter = document.getElementById('btnCloseSettingsFooter');
+const btnSettingsAddFolder = document.getElementById('btnSettingsAddFolder');
+const btnResetHidden = document.getElementById('btnResetHidden');
+const settingsLibrariesList = document.getElementById('settingsLibrariesList');
+const settingsHiddenCount = document.getElementById('settingsHiddenCount');
+const settingsXboxPath = document.getElementById('settingsXboxPath');
 
 // Initialize
 window.addEventListener('DOMContentLoaded', async () => {
@@ -104,7 +130,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // Setup Events
 function setupEventListeners() {
-  // Tab buttons
+  // Category Tab buttons
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -114,6 +140,42 @@ function setupEventListeners() {
       render();
     });
   });
+
+  // Center Section Navigation Links
+  const sectionNavBtns = document.querySelectorAll('.section-nav-btn');
+  sectionNavBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      sectionNavBtns.forEach(b => b.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      const sec = e.currentTarget.getAttribute('data-section');
+      appState.currentSection = sec;
+      if (sec === 'sync') {
+        const missingTab = document.getElementById('tabMissing');
+        if (missingTab) missingTab.click();
+        if (btnSync && !btnSync.disabled) btnSync.focus();
+      } else if (sec === 'backups') {
+        openBackupsModal();
+      } else if (sec === 'settings') {
+        openSettingsModal();
+      } else {
+        render();
+      }
+    });
+  });
+
+  // Shoulder & Trigger Navigation Badges (Interactive clicks & taps)
+  if (badgeLB) {
+    badgeLB.addEventListener('click', () => controllerNav.switchSection(-1));
+  }
+  if (badgeRB) {
+    badgeRB.addEventListener('click', () => controllerNav.switchSection(1));
+  }
+  if (badgeLT) {
+    badgeLT.addEventListener('click', () => controllerNav.switchTab(-1));
+  }
+  if (badgeRT) {
+    badgeRT.addEventListener('click', () => controllerNav.switchTab(1));
+  }
 
   // Search input
   searchInput.addEventListener('input', (e) => {
@@ -161,49 +223,90 @@ function setupEventListeners() {
   });
 
   // Add Custom Folder Button
-  btnAddFolder.addEventListener('click', async () => {
-    try {
-      const selectedPath = await window.api.selectFolder();
-      if (selectedPath) {
-        if (!appState.customPaths.includes(selectedPath)) {
-          appState.customPaths.push(selectedPath);
-          logConsole(`[Library] Added custom path: ${selectedPath}`, 'info');
-          await triggerScan();
-        } else {
-          logConsole(`[Library] Folder already added: ${selectedPath}`, 'warn');
-        }
-      }
-    } catch (e) {
-      logConsole(`[Error] Failed to select folder: ${e.message}`, 'error');
-    }
-  });
+  if (btnAddFolder) {
+    btnAddFolder.addEventListener('click', async () => {
+      await promptAddFolder();
+    });
+  }
 
   // Backups Modal
-  btnBackups.addEventListener('click', async () => {
-    await openBackupsModal();
-  });
+  if (btnBackups) {
+    btnBackups.addEventListener('click', async () => {
+      await openBackupsModal();
+    });
+  }
 
-  btnCloseBackups.addEventListener('click', () => {
-    backupsModal.style.display = 'none';
-  });
+  if (btnCloseBackups) {
+    btnCloseBackups.addEventListener('click', () => {
+      backupsModal.style.display = 'none';
+    });
+  }
+
+  if (btnCloseBackupsFooter) {
+    btnCloseBackupsFooter.addEventListener('click', () => {
+      backupsModal.style.display = 'none';
+    });
+  }
+
+  // Settings Modal Handlers
+  if (btnCloseSettings) {
+    btnCloseSettings.addEventListener('click', () => {
+      settingsModal.style.display = 'none';
+    });
+  }
+
+  if (btnCloseSettingsFooter) {
+    btnCloseSettingsFooter.addEventListener('click', () => {
+      settingsModal.style.display = 'none';
+    });
+  }
+
+  if (btnSettingsAddFolder) {
+    btnSettingsAddFolder.addEventListener('click', async () => {
+      await promptAddFolder();
+      updateSettingsModalUI();
+    });
+  }
+
+  if (btnResetHidden) {
+    btnResetHidden.addEventListener('click', () => {
+      appState.hiddenAppIds.clear();
+      saveHiddenAppIds(appState.hiddenAppIds);
+      updateSettingsModalUI();
+      render();
+      logConsole('[Settings] Reset all hidden game titles.', 'info');
+    });
+  }
 
   // Kill Xbox Button
-  btnKillXbox.addEventListener('click', async () => {
-    await closeXboxApp();
-  });
+  if (btnKillXbox) {
+    btnKillXbox.addEventListener('click', async () => {
+      await closeXboxApp();
+    });
+  }
 
-  // Drawer Toggles
-  drawerHeader.addEventListener('click', () => {
-    consoleDrawer.classList.toggle('collapsed');
-  });
+  // Drawer Toggles (if present)
+  if (drawerHeader && consoleDrawer) {
+    drawerHeader.addEventListener('click', () => {
+      consoleDrawer.classList.toggle('collapsed');
+    });
+  }
 
-  btnClearLog.addEventListener('click', (e) => {
-    e.stopPropagation();
-    consoleLogs.innerHTML = '';
-    drawerPreviewText.textContent = 'Console cleared.';
-  });
+  if (btnClearLog) {
+    btnClearLog.addEventListener('click', (e) => {
+      e.stopPropagation();
+      consoleLogs.innerHTML = '';
+      if (drawerPreviewText) drawerPreviewText.textContent = 'Console cleared.';
+    });
+  }
 
   // Modal Actions: Sync
+  if (btnCloseConfirm) {
+    btnCloseConfirm.addEventListener('click', () => {
+      confirmModal.style.display = 'none';
+    });
+  }
+
   btnCancelSync.addEventListener('click', () => {
     confirmModal.style.display = 'none';
   });
@@ -243,7 +346,7 @@ function setupEventListeners() {
   // FSE Controls
   const btnToggleFse = document.getElementById('btnToggleFse');
   const updateFseState = (isFull) => {
-    document.body.classList.toggle('fse-active', isFull);
+    document.body.classList.toggle('fse-active', !!isFull);
     const fseBtnLabel = document.getElementById('fseBtnLabel');
     if (fseBtnLabel) {
       fseBtnLabel.textContent = isFull ? 'Exit FSE' : 'FSE';
@@ -254,29 +357,56 @@ function setupEventListeners() {
         ? '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>'
         : '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>';
     }
+    if (btnToggleFse) {
+      btnToggleFse.classList.toggle('active', !!isFull);
+    }
   };
 
+  async function toggleFse() {
+    try {
+      let isFull = false;
+      if (window.api && typeof window.api.toggleFullscreen === 'function') {
+        isFull = await window.api.toggleFullscreen();
+      } else if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        isFull = false;
+      } else {
+        await document.documentElement.requestFullscreen();
+        isFull = true;
+      }
+      updateFseState(isFull);
+    } catch (e) {
+      console.warn('FSE toggle error, attempting DOM fullscreen fallback:', e);
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => updateFseState(true)).catch(() => {});
+      } else {
+        document.exitFullscreen().then(() => updateFseState(false)).catch(() => {});
+      }
+    }
+  }
+
   if (btnToggleFse) {
-    btnToggleFse.addEventListener('click', async () => {
-      const isFull = await window.api.toggleFullscreen();
+    btnToggleFse.addEventListener('click', toggleFse);
+  }
+
+  // Handle IPC and keyboard F11
+  if (window.api && typeof window.api.onFullscreenChange === 'function') {
+    window.api.onFullscreenChange(isFull => {
       updateFseState(isFull);
     });
   }
 
-  // Handle IPC and keyboard F11
-  window.api.onFullscreenChange(isFull => {
-    updateFseState(isFull);
-  });
-
   window.addEventListener('keydown', (e) => {
     if (e.key === 'F11') {
       e.preventDefault();
-      window.api.toggleFullscreen().then(updateFseState);
+      toggleFse();
     }
   });
 
   // Query initial fullscreen state
-  window.api.getFullscreenState().then(updateFseState);
+  if (window.api && typeof window.api.getFullscreenState === 'function') {
+    window.api.getFullscreenState().then(updateFseState);
+  }
 
   // Listen to IPC sync progress events
   window.api.onSyncProgress(data => {
@@ -300,8 +430,8 @@ async function loadVersion() {
     if (semverBadge) semverBadge.textContent = `v${v}`;
     if (footerVersionBadge) footerVersionBadge.textContent = `v${v}`;
   } catch {
-    if (semverBadge) semverBadge.textContent = 'v1.4.0';
-    if (footerVersionBadge) footerVersionBadge.textContent = 'v1.4.0';
+    if (semverBadge) semverBadge.textContent = 'v1.5.0';
+    if (footerVersionBadge) footerVersionBadge.textContent = 'v1.5.0';
   }
 }
 
@@ -491,6 +621,23 @@ function render() {
   btnSync.disabled = selectedCount === 0 || appState.isSyncing;
   syncBtnLabel.textContent = selectedCount > 0 ? `Sync ${selectedCount} to Xbox` : 'Sync to Xbox App';
 
+  // Section Header Headline (My Games | Steam Bridge (X games))
+  if (sectionSubtitle && sectionCount) {
+    const titles = {
+      missing: 'Missing from Xbox',
+      synced: 'Synced to Xbox',
+      all: 'All Steam Titles',
+      hidden: 'Hidden Games',
+      xbox: 'Xbox App Library'
+    };
+    sectionSubtitle.textContent = titles[appState.currentTab] || 'Steam Bridge';
+    const currentCount = (appState.currentTab === 'missing') ? missing.length :
+                         (appState.currentTab === 'synced') ? synced.length :
+                         (appState.currentTab === 'all') ? allSteam.length :
+                         (appState.currentTab === 'hidden') ? hiddenGames.length : totalXbox;
+    sectionCount.textContent = `(${currentCount} game${currentCount === 1 ? '' : 's'})`;
+  }
+
   // Selection Banner Visibility
   if (appState.currentTab === 'missing') {
     selectionBanner.style.display = 'flex';
@@ -511,6 +658,7 @@ function renderSelectionState() {
 }
 
 function renderCards() {
+  gamesContainer.className = 'games-showcase games-grid';
   gamesContainer.innerHTML = '';
 
   let listToDisplay = [];
@@ -567,6 +715,16 @@ function renderCards() {
 
     const exeName = game.primaryExecutable ? game.primaryExecutable.split(/[\\/]/).pop() : 'steam://';
 
+    const steamSvg = `
+      <div class="card-platform-badge" title="Steam Platform">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#66c0f4" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="15.5" cy="8.5" r="2.5" fill="#66c0f4"/>
+          <path d="M7 15l4.5-2.5"/>
+          <circle cx="7" cy="15" r="2" fill="#66c0f4"/>
+        </svg>
+      </div>`;
+
     card.innerHTML = `
       <div class="card-header-art">
         ${isMissingTab ? `
@@ -575,6 +733,7 @@ function renderCards() {
         <span class="card-status-pill ${statusPillClass}">
           ${statusPillText}
         </span>
+        ${steamSvg}
         <img src="${game.headerUrl || `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`}" alt="${game.name}" onerror="this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg'; this.onerror=null;" />
       </div>
       <div class="card-body">
@@ -686,6 +845,7 @@ function renderCards() {
 }
 
 function renderXboxCards(xboxGames) {
+  gamesContainer.className = 'games-showcase games-grid';
   if (xboxGames.length === 0) {
     renderEmptyState();
     return;
@@ -699,11 +859,22 @@ function renderXboxCards(xboxGames) {
     const imagePath = entry.imagePath || entry.bannerUrl || entry.thumbnailFile || 'https://assets.xboxservices.com/assets/79/32/7932e6a9-8588-4db9-8b89-299f01bc49b0.jpg';
     const canUninject = isCustom || (entry.id && String(entry.id).startsWith('steam_')) || entry.provider === 'steam';
 
+    const xboxSvg = `
+      <div class="card-platform-badge" title="Xbox Title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00e575" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M8 8c2.5 2 5.5 2 8 0M8 16c2.5-2 5.5-2 8 0"/>
+          <line x1="7.5" y1="7.5" x2="16.5" y2="16.5"/>
+          <line x1="16.5" y1="7.5" x2="7.5" y2="16.5"/>
+        </svg>
+      </div>`;
+
     card.innerHTML = `
       <div class="card-header-art">
         <span class="card-status-pill ${isCustom ? 'pill-synced' : 'pill-native'}">
           ${isCustom ? (entry.source || 'Sideloaded') : 'Xbox Store'}
         </span>
+        ${xboxSvg}
         <img src="${imagePath}" alt="${title}" onerror="this.src='https://assets.xboxservices.com/assets/79/32/7932e6a9-8588-4db9-8b89-299f01bc49b0.jpg'" />
       </div>
       <div class="card-body">
@@ -814,45 +985,68 @@ function renderEmptyState() {
 }
 
 // ============================================================================
-// Controller & Gamepad Navigation Engine (Windows & Handheld Touch PCs)
+// Controller & Gamepad Navigation Engine (Universal Windows & Handheld Support)
 // ============================================================================
 const controllerNav = {
   isActive: false,
   focusedEl: null,
   lastActionTime: 0,
-  repeatDelay: 180, // ms debounce between directional presses
+  lastStickDir: null,
+  stickHoldStart: 0,
+  repeatDelay: 180, // ms debounce between directional repeats
+  initialDelay: 320, // ms before first repeat
   prevButtons: new Map(),
+  lastControllerActionTime: 0,
 
   init() {
-    this.hintsHud = document.getElementById('controllerHintsHud');
+    this.hintsHud = document.getElementById('footerControllerLegend');
 
-    // Filter mouse movement: only deactivate if user moves mouse significantly (>30px)
-    let cumulativeMouseMove = 0;
-    let mouseMoveTimer = null;
+    // Deliberate mouse movement filter
+    let mouseAccumDist = 0;
+    let lastMouseX = null;
+    let lastMouseY = null;
+
     window.addEventListener('mousemove', (e) => {
-      const dist = Math.hypot(e.movementX || 0, e.movementY || 0);
-      cumulativeMouseMove += dist;
-      if (mouseMoveTimer) clearTimeout(mouseMoveTimer);
-      mouseMoveTimer = setTimeout(() => {
-        cumulativeMouseMove = 0;
-      }, 400);
+      // Handheld stick mouse-emulation protection: ignore mouse movement within 700ms of controller input
+      if (performance.now() - this.lastControllerActionTime < 700) {
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        return;
+      }
 
-      if (cumulativeMouseMove > 30) {
+      if (lastMouseX !== null && lastMouseY !== null) {
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        mouseAccumDist += Math.hypot(dx, dy);
+      }
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+
+      // When deliberate mouse movement occurs (>25px total): return to desktop mode
+      if (mouseAccumDist > 25) {
+        mouseAccumDist = 0;
         if (this.isActive) {
           this.deactivate();
         }
-        cumulativeMouseMove = 0;
       }
     });
 
-    // Touch interaction turns off controller mode
+    // Mouse click or touch immediately returns to desktop mode
+    window.addEventListener('mousedown', () => {
+      mouseAccumDist = 0;
+      if (this.isActive) {
+        this.deactivate();
+      }
+    });
+
     window.addEventListener('touchstart', () => {
+      mouseAccumDist = 0;
       if (this.isActive) {
         this.deactivate();
       }
     }, { passive: true });
 
-    // Keyboard Arrow Navigation (First-Class Desktop / Handheld Fallback)
+    // Keyboard Navigation (Universal Accessibility & Handheld Fallback)
     window.addEventListener('keydown', (e) => {
       if (e.target && e.target.id === 'searchInput' && !['Escape', 'Tab'].includes(e.key)) {
         return;
@@ -860,6 +1054,7 @@ const controllerNav = {
 
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
+        this.lastControllerActionTime = performance.now();
         if (!this.isActive) this.activate();
         if (e.key === 'ArrowRight') this.navigateDirection('right');
         else if (e.key === 'ArrowLeft') this.navigateDirection('left');
@@ -868,15 +1063,30 @@ const controllerNav = {
       } else if (e.key === 'Enter' || e.key === ' ') {
         if (this.focusedEl && !['BUTTON', 'INPUT'].includes(e.target.tagName)) {
           e.preventDefault();
+          this.lastControllerActionTime = performance.now();
           this.handleButtonA();
         }
       } else if (e.key === 'Escape') {
         e.preventDefault();
+        this.lastControllerActionTime = performance.now();
         this.handleButtonB();
       } else if (e.key === 'Tab') {
+        this.lastControllerActionTime = performance.now();
         if (!this.isActive) this.activate();
         e.preventDefault();
         this.navigateDirection(e.shiftKey ? 'left' : 'right');
+      } else if (e.key === 'q' || e.key === 'Q') {
+        if (!['INPUT'].includes(e.target.tagName)) {
+          e.preventDefault();
+          this.lastControllerActionTime = performance.now();
+          this.switchSection(-1);
+        }
+      } else if (e.key === 'e' || e.key === 'E') {
+        if (!['INPUT'].includes(e.target.tagName)) {
+          e.preventDefault();
+          this.lastControllerActionTime = performance.now();
+          this.switchSection(1);
+        }
       }
     });
 
@@ -892,33 +1102,35 @@ const controllerNav = {
       if (this.isActive) this.deactivate();
     });
 
-    // Start 60fps polling loop
+    // Dual-loop polling: requestAnimationFrame + 16ms interval safety backup
     requestAnimationFrame(this.poll.bind(this));
+    setInterval(() => {
+      this.poll(performance.now());
+    }, 16);
   },
 
   updateGamepadPill(pad, isConnected) {
     if (!gamepadStatusPill || !gamepadStatusText) return;
     if (isConnected && pad) {
-      const name = pad.id.includes('Xbox') ? 'Xbox Controller' : (pad.id.includes('360') ? 'Xbox 360' : 'Gamepad Connected');
+      const name = pad.id.includes('Xbox') ? 'Xbox Controller' : (pad.id.includes('360') ? 'Xbox 360' : 'Controller Ready');
       gamepadStatusText.textContent = name;
       gamepadStatusPill.classList.add('active');
     } else {
-      gamepadStatusText.textContent = 'Controller Ready';
+      gamepadStatusText.textContent = 'Desktop Mode';
       gamepadStatusPill.classList.remove('active');
     }
   },
 
   activate(activePad = null) {
     this.isActive = true;
-    document.body.classList.add('gamepad-mode');
-    if (this.hintsHud) {
-      this.hintsHud.style.display = 'block';
-      void this.hintsHud.offsetWidth;
-      this.hintsHud.classList.add('visible');
-    }
+    document.body.classList.add('controller-mode');
+    document.body.classList.remove('desktop-mode');
+
     if (gamepadStatusPill) gamepadStatusPill.classList.add('active');
-    if (gamepadStatusText && activePad) {
-      const name = activePad.id.includes('Xbox') ? 'Xbox Controller Active' : 'Gamepad Active';
+    if (gamepadStatusText) {
+      const name = (activePad && activePad.id && activePad.id.includes('Xbox'))
+        ? 'Xbox Controller Active'
+        : 'Controller Active';
       gamepadStatusText.textContent = name;
     }
 
@@ -931,98 +1143,132 @@ const controllerNav = {
 
   deactivate() {
     this.isActive = false;
-    document.body.classList.remove('gamepad-mode');
-    if (this.hintsHud) {
-      this.hintsHud.classList.remove('visible');
-      setTimeout(() => {
-        if (!this.isActive && this.hintsHud) this.hintsHud.style.display = 'none';
-      }, 250);
-    }
-    if (gamepadStatusPill) gamepadStatusPill.classList.remove('active');
-    if (gamepadStatusText) gamepadStatusText.textContent = 'Controller Ready';
+    document.body.classList.remove('controller-mode');
+    document.body.classList.add('desktop-mode');
+
     if (this.focusedEl) {
       this.focusedEl.classList.remove('gamepad-focused');
     }
+    // Clear any residual focus rings across document
+    document.querySelectorAll('.gamepad-focused').forEach(el => el.classList.remove('gamepad-focused'));
+
+    if (gamepadStatusPill) gamepadStatusPill.classList.remove('active');
+    if (gamepadStatusText) {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const hasAny = Array.from(gamepads).some(p => p && p.connected);
+      gamepadStatusText.textContent = hasAny ? 'Controller Ready' : 'Desktop Mode';
+    }
+  },
+
+  decodeHatSwitch(axisVal) {
+    if (axisVal === undefined || axisVal === null || Math.abs(axisVal) > 1.05) {
+      return { up: false, down: false, left: false, right: false };
+    }
+    const v = Math.round(axisVal * 100) / 100;
+    return {
+      up: (v >= -1.02 && v <= -0.9) || (v >= 0.95 && v <= 1.02) || (v >= -0.75 && v <= -0.65),
+      right: (v >= -0.75 && v <= -0.1),
+      down: (v >= -0.2 && v <= 0.45),
+      left: (v >= 0.4 && v <= 1.02)
+    };
   },
 
   poll(timestamp) {
-    requestAnimationFrame(this.poll.bind(this));
-
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    let activePad = null;
-    let anyButtonPressed = false;
+    let detectedInputOnAnyPad = false;
 
-    // Check ALL gamepads (never break early on inactive slots)
     for (let i = 0; i < gamepads.length; i++) {
       const pad = gamepads[i];
       if (!pad || !pad.connected) continue;
 
-      let padHasInput = false;
-      for (let b = 0; b < pad.buttons.length; b++) {
-        if (pad.buttons[b] && pad.buttons[b].pressed) {
-          padHasInput = true;
-          anyButtonPressed = true;
-          break;
-        }
-      }
-      if (!padHasInput && pad.axes) {
-        if (Math.abs(pad.axes[0] || 0) > 0.35 || Math.abs(pad.axes[1] || 0) > 0.35) {
-          padHasInput = true;
-        }
-      }
-
-      if (padHasInput) {
-        activePad = pad;
-        break;
-      } else if (!activePad) {
-        activePad = pad;
+      const hadInput = this.processGamepadInput(pad, timestamp);
+      if (hadInput) {
+        detectedInputOnAnyPad = true;
       }
     }
 
-    if (!activePad) return;
-
-    // Wake up on input
-    const hasStickInput = activePad.axes && (Math.abs(activePad.axes[0] || 0) > 0.35 || Math.abs(activePad.axes[1] || 0) > 0.35);
-    if ((anyButtonPressed || hasStickInput) && !this.isActive) {
-      this.activate(activePad);
+    if (detectedInputOnAnyPad) {
+      this.lastControllerActionTime = performance.now();
     }
+  },
 
-    if (!this.isActive) return;
+  processGamepadInput(pad, timestamp) {
+    if (!pad) return false;
 
-    // Read buttons (Edge triggered)
+    let hadInput = false;
+
+    // Edge-triggered button check helper
     const isButtonPressed = (btnIndex) => {
-      const isDown = !!(activePad.buttons[btnIndex] && activePad.buttons[btnIndex].pressed);
-      const wasDown = !!this.prevButtons.get(btnIndex);
-      this.prevButtons.set(btnIndex, isDown);
+      const btn = pad.buttons && pad.buttons[btnIndex];
+      const isDown = !!(btn && (btn.pressed || btn.value > 0.3));
+      const key = `${pad.index}_${btnIndex}`;
+      const wasDown = !!this.prevButtons.get(key);
+      this.prevButtons.set(key, isDown);
+      if (isDown) hadInput = true;
       return isDown && !wasDown;
     };
 
-    // Read D-pad
-    const dpadUp = isButtonPressed(12);
-    const dpadDown = isButtonPressed(13);
-    const dpadLeft = isButtonPressed(14);
-    const dpadRight = isButtonPressed(15);
+    // Continuous button down helper (e.g. for triggers)
+    const isButtonDown = (btnIndex) => {
+      const btn = pad.buttons && pad.buttons[btnIndex];
+      return !!(btn && (btn.pressed || btn.value > 0.35));
+    };
 
-    // Read Left Stick with repeat delay
-    const axisX = activePad.axes ? (activePad.axes[0] || 0) : 0;
-    const axisY = activePad.axes ? (activePad.axes[1] || 0) : 0;
-    const now = timestamp;
-    const canRepeat = (now - this.lastActionTime) > this.repeatDelay;
+    // Decode D-pad buttons (Standard & DirectInput)
+    const dpadUpBtn = isButtonPressed(12);
+    const dpadDownBtn = isButtonPressed(13);
+    const dpadLeftBtn = isButtonPressed(14);
+    const dpadRightBtn = isButtonPressed(15);
 
-    let moveLeft = dpadLeft || (canRepeat && axisX < -0.45);
-    let moveRight = dpadRight || (canRepeat && axisX > 0.45);
-    let moveUp = dpadUp || (canRepeat && axisY < -0.45);
-    let moveDown = dpadDown || (canRepeat && axisY > 0.45);
+    // Decode POV Hat Switch (DirectInput generic controllers)
+    const hat1 = (pad.axes && pad.axes.length > 9) ? this.decodeHatSwitch(pad.axes[9]) : null;
+    const hat2 = (pad.axes && pad.axes.length > 4 && !hat1) ? this.decodeHatSwitch(pad.axes[4]) : null;
+    const hat = hat1 || hat2 || { up: false, down: false, left: false, right: false };
 
-    if (moveLeft || moveRight || moveUp || moveDown) {
-      this.lastActionTime = now;
-      if (moveLeft) this.navigateDirection('left');
-      else if (moveRight) this.navigateDirection('right');
-      else if (moveUp) this.navigateDirection('up');
-      else if (moveDown) this.navigateDirection('down');
+    // Decode Left Analog Stick
+    const axisX = (pad.axes && pad.axes.length > 0) ? (pad.axes[0] || 0) : 0;
+    const axisY = (pad.axes && pad.axes.length > 1) ? (pad.axes[1] || 0) : 0;
+
+    const stickThreshold = 0.42;
+    const stickMovedX = Math.abs(axisX) > 0.22;
+    const stickMovedY = Math.abs(axisY) > 0.22;
+    if (stickMovedX || stickMovedY || hat.up || hat.down || hat.left || hat.right) {
+      hadInput = true;
     }
 
-    // Action buttons
+    // Wake up on input
+    if (hadInput && !this.isActive) {
+      this.activate(pad);
+    }
+
+    if (!this.isActive) return hadInput;
+
+    // Directional Navigation
+    const now = timestamp || performance.now();
+    let dir = null;
+    if (dpadLeftBtn || hat.left || axisX < -stickThreshold) dir = 'left';
+    else if (dpadRightBtn || hat.right || axisX > stickThreshold) dir = 'right';
+    else if (dpadUpBtn || hat.up || axisY < -stickThreshold) dir = 'up';
+    else if (dpadDownBtn || hat.down || axisY > stickThreshold) dir = 'down';
+
+    if (dir) {
+      if (this.lastStickDir !== dir) {
+        this.lastStickDir = dir;
+        this.stickHoldStart = now;
+        this.lastActionTime = now;
+        this.navigateDirection(dir);
+      } else {
+        const holdDuration = now - this.stickHoldStart;
+        if (holdDuration > this.initialDelay && (now - this.lastActionTime) > this.repeatDelay) {
+          this.lastActionTime = now;
+          this.navigateDirection(dir);
+        }
+      }
+    } else {
+      this.lastStickDir = null;
+    }
+
+    // Action Buttons
     if (isButtonPressed(0)) { // A button: Select / Toggle
       this.handleButtonA();
     }
@@ -1035,10 +1281,16 @@ const controllerNav = {
     if (isButtonPressed(3)) { // Y button: Scan Now
       this.handleButtonY();
     }
-    if (isButtonPressed(4)) { // LB: Previous Tab
+    if (isButtonPressed(4)) { // LB: Previous Section
+      this.switchSection(-1);
+    }
+    if (isButtonPressed(5)) { // RB: Next Section
+      this.switchSection(1);
+    }
+    if (isButtonPressed(6) || (pad.axes && pad.axes[2] > 0.4 && isButtonPressed(20))) { // LT: Previous Category Tab
       this.switchTab(-1);
     }
-    if (isButtonPressed(5)) { // RB: Next Tab
+    if (isButtonPressed(7) || (pad.axes && pad.axes[5] > 0.4 && isButtonPressed(21))) { // RT: Next Category Tab
       this.switchTab(1);
     }
     if (isButtonPressed(9)) { // Start / Menu: Toggle FSE
@@ -1046,12 +1298,17 @@ const controllerNav = {
       if (btnToggleFse) btnToggleFse.click();
     }
     if (isButtonPressed(8)) { // Select / View: Backups
-      btnBackups.click();
+      openBackupsModal();
     }
+
+    return hadInput;
   },
 
   getFocusableElements() {
     // Check if modal is active
+    if (settingsModal && settingsModal.style.display === 'flex') {
+      return [btnCloseSettings, btnCloseSettingsFooter, btnSettingsAddFolder, btnResetHidden].filter(el => el && el.offsetParent !== null);
+    }
     if (uninjectModal && uninjectModal.style.display === 'flex') {
       return [btnCancelUninject, btnProceedUninject].filter(el => el && el.offsetParent !== null);
     }
@@ -1060,10 +1317,14 @@ const controllerNav = {
     }
     if (backupsModal && backupsModal.style.display === 'flex') {
       const restores = Array.from(backupsModal.querySelectorAll('.btn-restore'));
-      return [btnCloseBackups, ...restores].filter(el => el && el.offsetParent !== null);
+      return [btnCloseBackups, btnCloseBackupsFooter, ...restores].filter(el => el && el.offsetParent !== null);
     }
 
     const elements = [];
+
+    // Main Section Nav Buttons
+    const secBtns = Array.from(document.querySelectorAll('.section-nav-btn'));
+    elements.push(...secBtns);
 
     // Header buttons
     const fse = document.getElementById('btnToggleFse');
@@ -1177,6 +1438,10 @@ const controllerNav = {
   },
 
   handleButtonB() {
+    if (settingsModal && settingsModal.style.display === 'flex') {
+      btnCloseSettings.click();
+      return;
+    }
     if (uninjectModal && uninjectModal.style.display === 'flex') {
       btnCancelUninject.click();
       return;
@@ -1205,6 +1470,18 @@ const controllerNav = {
 
   handleButtonY() {
     btnScan.click();
+  },
+
+  switchSection(direction) {
+    const sections = ['library', 'sync', 'backups', 'settings'];
+    const currentIdx = sections.indexOf(appState.currentSection || 'library');
+    const nextIdx = (currentIdx + direction + sections.length) % sections.length;
+    const nextSec = sections[nextIdx];
+    const targetBtn = document.querySelector(`.section-nav-btn[data-section="${nextSec}"]`);
+    if (targetBtn) {
+      targetBtn.click();
+      this.applyFocus(targetBtn);
+    }
   },
 
   switchTab(direction) {
@@ -1347,3 +1624,71 @@ async function restoreSnapshot(path, name) {
     logConsole(`[Restore Error] ${e.message}`, 'error');
   }
 }
+
+// Custom Folder Selection
+async function promptAddFolder() {
+  try {
+    const selectedPath = await window.api.selectFolder();
+    if (selectedPath) {
+      if (!appState.customPaths.includes(selectedPath)) {
+        appState.customPaths.push(selectedPath);
+        logConsole(`[Library] Added custom path: ${selectedPath}`, 'info');
+        await triggerScan();
+      } else {
+        logConsole(`[Library] Folder already added: ${selectedPath}`, 'warn');
+      }
+    }
+  } catch (e) {
+    logConsole(`[Error] Failed to select folder: ${e.message}`, 'error');
+  }
+}
+
+// Settings & Libraries Modal
+function openSettingsModal() {
+  updateSettingsModalUI();
+  settingsModal.style.display = 'flex';
+  if (typeof controllerNav !== 'undefined' && controllerNav.isActive) {
+    controllerNav.applyFocus(btnCloseSettings);
+  }
+}
+
+function updateSettingsModalUI() {
+  if (settingsHiddenCount) {
+    settingsHiddenCount.textContent = appState.hiddenAppIds.size;
+  }
+  if (settingsXboxPath) {
+    settingsXboxPath.textContent = (appState.xboxData && appState.xboxData.localStatePath)
+      ? appState.xboxData.localStatePath
+      : 'Packages\\Microsoft.GamingApp_8wekyb3d8bbwe\\LocalState';
+  }
+  if (settingsLibrariesList) {
+    settingsLibrariesList.innerHTML = '';
+    const allLibs = [...appState.libraries, ...appState.customPaths];
+    const uniqueLibs = Array.from(new Set(allLibs));
+    if (uniqueLibs.length === 0) {
+      settingsLibrariesList.innerHTML = '<div class="empty-backups">No library folders discovered yet. Click Scan to detect.</div>';
+      return;
+    }
+    uniqueLibs.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'library-item';
+      const isCustom = appState.customPaths.includes(p);
+      item.innerHTML = `
+        <div class="library-path">${escapeHtml(p)} ${isCustom ? '<span class="console-badge">Custom</span>' : ''}</div>
+        ${isCustom ? `
+          <button class="console-btn btn-ghost btn-sm btn-remove-folder" data-path="${escapeHtml(p)}">Remove</button>
+        ` : ''}
+      `;
+      const removeBtn = item.querySelector('.btn-remove-folder');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', async () => {
+          appState.customPaths = appState.customPaths.filter(cp => cp !== p);
+          updateSettingsModalUI();
+          await triggerScan();
+        });
+      }
+      settingsLibrariesList.appendChild(item);
+    });
+  }
+}
+
