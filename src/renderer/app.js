@@ -18,7 +18,7 @@ function saveHiddenAppIds(set) {
 
 // State
 let appState = {
-  version: '1.3.4',
+  version: '1.4.0',
   currentTab: 'missing',
   steamRoots: [],
   libraries: [],
@@ -59,7 +59,6 @@ const scanBtnText = document.getElementById('scanBtnText');
 const btnSync = document.getElementById('btnSync');
 const syncBtnLabel = document.getElementById('syncBtnLabel');
 const btnAddFolder = document.getElementById('btnAddFolder');
-const btnDemoFixture = document.getElementById('btnDemoFixture');
 const btnBackups = document.getElementById('btnBackups');
 const processPill = document.getElementById('processPill');
 const processDot = document.getElementById('processDot');
@@ -71,6 +70,8 @@ const consoleDrawer = document.getElementById('consoleDrawer');
 const drawerHeader = document.getElementById('drawerHeader');
 const drawerPreviewText = document.getElementById('drawerPreviewText');
 const searchClearBtn = document.getElementById('searchClearBtn');
+const gamepadStatusPill = document.getElementById('gamepadStatusPill');
+const gamepadStatusText = document.getElementById('gamepadStatusText');
 
 // Modal Elements
 const confirmModal = document.getElementById('confirmModal');
@@ -82,6 +83,15 @@ const btnProceedSync = document.getElementById('btnProceedSync');
 const backupsModal = document.getElementById('backupsModal');
 const btnCloseBackups = document.getElementById('btnCloseBackups');
 const backupsList = document.getElementById('backupsList');
+
+// Uninject Modal Elements
+const uninjectModal = document.getElementById('uninjectModal');
+const uninjectTitleName = document.getElementById('uninjectTitleName');
+const btnCloseUninject = document.getElementById('btnCloseUninject');
+const btnCancelUninject = document.getElementById('btnCancelUninject');
+const btnProceedUninject = document.getElementById('btnProceedUninject');
+let pendingUninjectAppId = null;
+let pendingUninjectTitle = '';
 
 // Initialize
 window.addEventListener('DOMContentLoaded', async () => {
@@ -111,7 +121,7 @@ function setupEventListeners() {
     if (searchClearBtn) {
       searchClearBtn.style.display = appState.searchQuery ? 'block' : 'none';
     }
-    render();
+    renderCards();
   });
 
   if (searchClearBtn) {
@@ -119,67 +129,81 @@ function setupEventListeners() {
       searchInput.value = '';
       appState.searchQuery = '';
       searchClearBtn.style.display = 'none';
-      render();
+      searchInput.focus();
+      renderCards();
     });
   }
 
-  // Scan Button
-  btnScan.addEventListener('click', () => triggerScan());
+  // Select all checkbox
+  selectAllCheckbox.addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    const missingFiltered = getFilteredMissingGames();
+    if (isChecked) {
+      missingFiltered.forEach(g => appState.selectedAppIds.add(g.appid));
+    } else {
+      missingFiltered.forEach(g => appState.selectedAppIds.delete(g.appid));
+    }
+    render();
+  });
 
-  // Add Steam Folder
-  btnAddFolder.addEventListener('click', async () => {
-    try {
-      const folder = await window.api.selectFolder();
-      if (folder) {
-        if (!appState.customPaths.includes(folder)) {
-          appState.customPaths.push(folder);
-          logConsole(`[Steam] Added custom library folder: ${folder}`, 'info');
-          await triggerScan();
-        }
-      }
-    } catch (err) {
-      logConsole(`[Error] Failed to select folder: ${err.message}`, 'error');
+  // Scan Button
+  btnScan.addEventListener('click', () => {
+    if (!appState.isScanning) {
+      triggerScan();
     }
   });
 
-  // Load Demo / Sample Titles (if present)
-  if (btnDemoFixture) {
-    btnDemoFixture.addEventListener('click', async () => {
-      try {
-        logConsole('[Demo] Generating sample Steam library fixtures...', 'info');
-        const res = await window.api.createDemoLibrary();
-        if (res.success) {
-          if (!appState.customPaths.includes(res.demoDir)) {
-            appState.customPaths.push(res.demoDir);
-          }
-          logConsole(`[Demo] Sample Steam library initialized at: ${res.demoDir}`, 'success');
+  // Sync to Xbox Button
+  btnSync.addEventListener('click', () => {
+    const toSync = getSelectedMissingGames();
+    if (toSync.length === 0) return;
+    openConfirmModal(toSync);
+  });
+
+  // Add Custom Folder Button
+  btnAddFolder.addEventListener('click', async () => {
+    try {
+      const selectedPath = await window.api.selectFolder();
+      if (selectedPath) {
+        if (!appState.customPaths.includes(selectedPath)) {
+          appState.customPaths.push(selectedPath);
+          logConsole(`[Library] Added custom path: ${selectedPath}`, 'info');
           await triggerScan();
         } else {
-          logConsole(`[Demo] Failed to generate fixture: ${res.error}`, 'error');
+          logConsole(`[Library] Folder already added: ${selectedPath}`, 'warn');
         }
-      } catch (err) {
-        logConsole(`[Error] ${err.message}`, 'error');
       }
-    });
-  }
+    } catch (e) {
+      logConsole(`[Error] Failed to select folder: ${e.message}`, 'error');
+    }
+  });
 
-  // Kill Xbox Process
+  // Backups Modal
+  btnBackups.addEventListener('click', async () => {
+    await openBackupsModal();
+  });
+
+  btnCloseBackups.addEventListener('click', () => {
+    backupsModal.style.display = 'none';
+  });
+
+  // Kill Xbox Button
   btnKillXbox.addEventListener('click', async () => {
-    logConsole('[Process] Closing Xbox processes...', 'warn');
-    await window.api.closeProcesses();
-    await checkProcesses();
+    await closeXboxApp();
   });
 
-  // Sync Click (Show modal)
-  btnSync.addEventListener('click', () => {
-    const selected = getSelectedMissingGames();
-    if (selected.length === 0) return;
-
-    modalGameCount.textContent = selected.length;
-    modalProcessWarning.style.display = appState.processInfo.isRunning ? 'block' : 'none';
-    confirmModal.style.display = 'flex';
+  // Drawer Toggles
+  drawerHeader.addEventListener('click', () => {
+    consoleDrawer.classList.toggle('collapsed');
   });
 
+  btnClearLog.addEventListener('click', (e) => {
+    e.stopPropagation();
+    consoleLogs.innerHTML = '';
+    drawerPreviewText.textContent = 'Console cleared.';
+  });
+
+  // Modal Actions: Sync
   btnCancelSync.addEventListener('click', () => {
     confirmModal.style.display = 'none';
   });
@@ -189,62 +213,46 @@ function setupEventListeners() {
     await executeSync();
   });
 
-  // Select all checkbox
-  selectAllCheckbox.addEventListener('change', (e) => {
-    const isChecked = e.target.checked;
-    const missing = getFilteredMissingGames();
-    if (isChecked) {
-      missing.forEach(g => appState.selectedAppIds.add(g.appid));
-    } else {
-      missing.forEach(g => appState.selectedAppIds.delete(g.appid));
-    }
-    renderSelectionState();
-    renderCards();
-  });
-
-  // Backups modal
-  btnBackups.addEventListener('click', async () => {
-    await loadBackupsList();
-    backupsModal.style.display = 'flex';
-  });
-
-  btnCloseBackups.addEventListener('click', () => {
-    backupsModal.style.display = 'none';
-  });
-
-  // Clear log
-  if (btnClearLog) {
-    btnClearLog.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (consoleLogs) consoleLogs.innerHTML = '';
+  // Modal Actions: Uninject
+  if (btnCloseUninject) {
+    btnCloseUninject.addEventListener('click', () => {
+      uninjectModal.style.display = 'none';
+      pendingUninjectAppId = null;
     });
   }
 
-  // Collapsible Console Drawer (Handheld Touch optimization)
-  if (drawerHeader && consoleDrawer) {
-    drawerHeader.addEventListener('click', (e) => {
-      if (e.target.closest('#btnClearLog')) return;
-      consoleDrawer.classList.toggle('collapsed');
+  if (btnCancelUninject) {
+    btnCancelUninject.addEventListener('click', () => {
+      uninjectModal.style.display = 'none';
+      pendingUninjectAppId = null;
     });
   }
 
-  // FSE Fullscreen Experience Toggle
-  const btnToggleFse = document.getElementById('btnToggleFse');
-  const fseBtnLabel = document.getElementById('fseBtnLabel');
-  const fseIcon = document.getElementById('fseIcon');
-
-  const updateFseState = (isFull) => {
-    if (fseBtnLabel) fseBtnLabel.textContent = isFull ? 'Exit FSE' : 'FSE';
-    if (btnToggleFse) {
-      if (isFull) {
-        btnToggleFse.classList.add('fse-active');
-        btnToggleFse.title = 'Exit Full Screen Experience (FSE)';
-        fseIcon.innerHTML = '<path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M4 10h6m0 0V4m0 6L3 3m17 7h-6m0 0V4m0 6l7-7"/>';
-      } else {
-        btnToggleFse.classList.remove('fse-active');
-        btnToggleFse.title = 'Enter Full Screen Experience (FSE)';
-        fseIcon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>';
+  if (btnProceedUninject) {
+    btnProceedUninject.addEventListener('click', async () => {
+      if (pendingUninjectAppId) {
+        const id = pendingUninjectAppId;
+        const title = pendingUninjectTitle;
+        uninjectModal.style.display = 'none';
+        pendingUninjectAppId = null;
+        await executeUninject(id, title);
       }
+    });
+  }
+
+  // FSE Controls
+  const btnToggleFse = document.getElementById('btnToggleFse');
+  const updateFseState = (isFull) => {
+    document.body.classList.toggle('fse-active', isFull);
+    const fseBtnLabel = document.getElementById('fseBtnLabel');
+    if (fseBtnLabel) {
+      fseBtnLabel.textContent = isFull ? 'Exit FSE' : 'FSE';
+    }
+    const fseIcon = document.getElementById('fseIcon');
+    if (fseIcon) {
+      fseIcon.innerHTML = isFull
+        ? '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>'
+        : '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>';
     }
   };
 
@@ -287,222 +295,184 @@ function setupEventListeners() {
 // Version
 async function loadVersion() {
   try {
-    const ver = await window.api.getAppVersion();
-    if (ver) {
-      appState.version = ver;
-      semverBadge.textContent = `v${ver}`;
-      footerVersionBadge.textContent = `v${ver}`;
-      document.title = `XboxSteamBridge v${ver}`;
-    }
-  } catch (err) {
-    console.error('Failed to load version:', err);
+    const v = await window.api.getAppVersion();
+    appState.version = v;
+    if (semverBadge) semverBadge.textContent = `v${v}`;
+    if (footerVersionBadge) footerVersionBadge.textContent = `v${v}`;
+  } catch {
+    if (semverBadge) semverBadge.textContent = 'v1.4.0';
+    if (footerVersionBadge) footerVersionBadge.textContent = 'v1.4.0';
   }
 }
 
-// Process Checker
+// Process Checks
 async function checkProcesses() {
   try {
-    const info = await window.api.checkProcesses();
-    appState.processInfo = info;
-    if (info.isRunning) {
-      processDot.className = 'pill-dot running';
-      const names = info.processes.map(p => p.name).join(', ');
-      processLabel.textContent = `Xbox active (${names})`;
+    const p = await window.api.checkProcesses();
+    appState.processInfo = p;
+    if (p.isRunning) {
+      processPill.classList.remove('ready');
+      processPill.classList.add('running');
+      processDot.classList.add('running');
+      processLabel.textContent = `Xbox App Active (${p.processes.length} proc)`;
       btnKillXbox.style.display = 'inline-block';
+      logConsole(`[Process] Detected active Xbox process: ${p.processes.map(x => x.name).join(', ')}`, 'warn');
     } else {
-      processDot.className = 'pill-dot safe';
-      processLabel.textContent = 'Xbox App closed (Safe to edit)';
+      processPill.classList.remove('running');
+      processPill.classList.add('ready');
+      processDot.classList.remove('running');
+      processLabel.textContent = 'Xbox App Closed';
       btnKillXbox.style.display = 'none';
     }
-  } catch (err) {
-    console.error('Error checking processes:', err);
+  } catch (e) {
+    logConsole(`[Process Check Error] ${e.message}`, 'error');
   }
 }
 
-// Trigger Scan
+async function closeXboxApp() {
+  btnKillXbox.disabled = true;
+  btnKillXbox.textContent = 'Closing...';
+  logConsole('[Process] Requesting graceful Xbox App shutdown...', 'info');
+  try {
+    const res = await window.api.closeProcesses();
+    if (res.success) {
+      logConsole('[Process] Xbox App closed successfully.', 'success');
+    } else {
+      logConsole(`[Process] Could not close Xbox: ${res.error}`, 'error');
+    }
+  } catch (err) {
+    logConsole(`[Process] Error: ${err.message}`, 'error');
+  } finally {
+    btnKillXbox.disabled = false;
+    btnKillXbox.textContent = 'Close Xbox';
+    await checkProcesses();
+  }
+}
+
+// Scan Trigger
 async function triggerScan() {
-  if (appState.isScanning) return;
   appState.isScanning = true;
+  btnScan.disabled = true;
   scanIcon.classList.add('spinning');
   scanBtnText.textContent = 'Scanning...';
-  logConsole('[Scanner] Scanning Steam libraries and querying PC Xbox App...', 'info');
+  logConsole('[Scanner] Starting scan of Steam and Xbox libraries...', 'info');
 
   try {
-    await checkProcesses();
-    const result = await window.api.scanSteam(appState.customPaths);
-    if (result.success) {
-      appState.steamRoots = result.steamRoots;
-      appState.libraries = result.libraries;
-      appState.games = result.games;
-      appState.xboxData = result.xboxData;
-
-      // Select all unhidden missing games by default
-      appState.selectedAppIds.clear();
-      appState.games
-        .filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)))
-        .forEach(g => appState.selectedAppIds.add(g.appid));
-
-      logConsole(`[Scanner] Discovered ${result.libraries.length} Steam library roots, found ${result.totalSteamGames} Steam games.`, 'info');
-      logConsole(`[Xbox] LocalState parsed. ${result.xboxData.totalRegisteredXboxTitles} custom titles found in Xbox App.`, 'info');
-      logConsole(`[Result] ${result.missingCount} games missing from Xbox. ${result.syncedCount} already synchronized.`, 'success');
-    } else {
-      logConsole(`[Error] Scan failed: ${result.error}`, 'error');
+    const res = await window.api.scanSteam(appState.customPaths);
+    if (!res.success) {
+      throw new Error(res.error || 'Scan failed.');
     }
-  } catch (err) {
-    logConsole(`[Error] Scan exception: ${err.message}`, 'error');
+
+    appState.steamRoots = res.steamRoots || [];
+    appState.libraries = res.libraries || [];
+    appState.games = res.games || [];
+    appState.xboxData = res.xboxData || null;
+
+    // Reset selection to all missing games by default
+    appState.selectedAppIds.clear();
+    appState.games.forEach(g => {
+      if (!g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid))) {
+        appState.selectedAppIds.add(g.appid);
+      }
+    });
+
+    logConsole(`[Scanner] Found ${res.totalSteamGames} Steam games across ${appState.libraries.length} library folders.`, 'success');
+    logConsole(`[Scanner] Xbox App local library has ${res.xboxData ? res.xboxData.totalRegisteredXboxTitles : 0} registered titles.`, 'info');
+    logConsole(`[Scanner] Synchronization status: ${res.missingCount} Missing, ${res.syncedCount} Synced.`, 'info');
+
+    render();
+  } catch (e) {
+    logConsole(`[Scan Error] ${e.message}`, 'error');
   } finally {
     appState.isScanning = false;
+    btnScan.disabled = false;
     scanIcon.classList.remove('spinning');
-    scanBtnText.textContent = 'Scan Now';
-    render();
+    scanBtnText.textContent = 'Scan';
   }
 }
 
-// Execute Sync
-async function executeSync() {
-  const selectedGames = getSelectedMissingGames();
-  if (selectedGames.length === 0) return;
+// Title Hiding & Unhiding
+function hideGame(appId) {
+  const strId = String(appId);
+  appState.hiddenAppIds.add(strId);
+  appState.selectedAppIds.delete(strId);
+  saveHiddenAppIds(appState.hiddenAppIds);
+  const found = appState.games.find(g => String(g.appid) === strId);
+  const title = found ? found.name : strId;
+  logConsole(`[Library] Hid title: "${title}" (AppID: ${strId})`, 'info');
+  render();
+}
 
-  appState.isSyncing = true;
-  btnSync.disabled = true;
-  syncBtnLabel.textContent = 'Syncing...';
+function unhideGame(appId) {
+  const strId = String(appId);
+  appState.hiddenAppIds.delete(strId);
+  saveHiddenAppIds(appState.hiddenAppIds);
+  const found = appState.games.find(g => String(g.appid) === strId);
+  const title = found ? found.name : strId;
+  if (found && !found.isDuplicate) {
+    appState.selectedAppIds.add(strId);
+  }
+  logConsole(`[Library] Restored title: "${title}" (AppID: ${strId})`, 'success');
+  render();
+}
 
-  logConsole(`[Sync] Initiating injection for ${selectedGames.length} titles...`, 'info');
-
-  try {
-    // If Xbox is running, close it first
-    if (appState.processInfo.isRunning) {
-      logConsole('[Safety] Gracefully closing Xbox processes to release database locks...', 'warn');
-      await window.api.closeProcesses();
-      await checkProcesses();
+// Uninject Flow
+function promptUninjectGame(appId, title) {
+  pendingUninjectAppId = appId;
+  pendingUninjectTitle = title || 'this game';
+  if (uninjectTitleName) uninjectTitleName.textContent = pendingUninjectTitle;
+  if (uninjectModal) {
+    uninjectModal.style.display = 'flex';
+    if (typeof controllerNav !== 'undefined' && controllerNav.isActive) {
+      controllerNav.applyFocus(btnProceedUninject);
     }
+  }
+}
 
-    const result = await window.api.syncGames(selectedGames);
-
-    if (result.success) {
-      logConsole(`[Success] Injected ${result.injectedCount} titles!`, 'success');
-      if (result.backupInfo && result.backupInfo.backups.length > 0) {
-        result.backupInfo.backups.forEach(b => {
-          logConsole(`[Backup Created] ${b.backup} (${b.size} bytes)`, 'info');
-        });
-      }
-      // Re-scan to update all counts and deduplicate
+async function executeUninject(appId, title) {
+  logConsole(`[Uninject] Removing "${title || appId}" from Xbox App database...`, 'info');
+  try {
+    const res = await window.api.uninjectGame(appId);
+    if (res.success) {
+      logConsole(`[Uninject] Successfully uninjected "${title || appId}".`, 'success');
       await triggerScan();
     } else {
-      logConsole(`[Error] Sync failed: ${result.error}`, 'error');
+      logConsole(`[Uninject Error] ${res.error || 'Failed to uninject game.'}`, 'error');
     }
   } catch (err) {
-    logConsole(`[Error] Sync exception: ${err.message}`, 'error');
-  } finally {
-    appState.isSyncing = false;
-    syncBtnLabel.textContent = 'Sync to Xbox App';
-    render();
+    logConsole(`[Uninject Error] ${err.message}`, 'error');
   }
 }
 
-// Helpers
+// Filtering Helpers
+function getFilteredMissingGames() {
+  const q = appState.searchQuery;
+  return appState.games.filter(g => {
+    if (g.isDuplicate) return false;
+    if (appState.hiddenAppIds.has(String(g.appid))) return false;
+    if (q) {
+      return g.name.toLowerCase().includes(q) || g.appid.includes(q);
+    }
+    return true;
+  });
+}
+
 function getSelectedMissingGames() {
   return appState.games.filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)) && appState.selectedAppIds.has(g.appid));
 }
 
-function getFilteredMissingGames() {
-  return appState.games
-    .filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)))
-    .filter(g => {
-      if (!appState.searchQuery) return true;
-      return g.name.toLowerCase().includes(appState.searchQuery) || g.appid.includes(appState.searchQuery);
-    });
-}
-
-function hideGame(appid) {
-  appState.hiddenAppIds.add(String(appid));
-  saveHiddenAppIds(appState.hiddenAppIds);
-  appState.selectedAppIds.delete(appid);
-  logConsole(`[Library] Hid title (AppID: ${appid}) from sync suggestions`, 'info');
-  render();
-}
-
-function unhideGame(appid) {
-  appState.hiddenAppIds.delete(String(appid));
-  saveHiddenAppIds(appState.hiddenAppIds);
-  logConsole(`[Library] Restored title (AppID: ${appid}) to active suggestions`, 'info');
-  render();
-}
-
-function logConsole(message, type = 'info') {
-  const entry = document.createElement('div');
-  entry.className = `log-entry log-${type}`;
-  const timestamp = new Date().toLocaleTimeString();
-  entry.textContent = `[${timestamp}] ${message}`;
-  consoleLogs.appendChild(entry);
-  consoleLogs.scrollTop = consoleLogs.scrollHeight;
-
-  if (drawerPreviewText) {
-    drawerPreviewText.textContent = `[${timestamp}] ${message}`;
-  }
-}
-
-// Backups Modal Manager
-async function loadBackupsList() {
-  backupsList.innerHTML = '<div class="empty-backups">Loading backups...</div>';
-  try {
-    const res = await window.api.getBackups();
-    if (!res.success || res.backups.length === 0) {
-      backupsList.innerHTML = '<div class="empty-backups">No previous backups found in Xbox LocalState.</div>';
-      return;
-    }
-
-    backupsList.innerHTML = '';
-    res.backups.forEach(b => {
-      const row = document.createElement('div');
-      row.className = 'backup-row';
-      const dateStr = new Date(b.createdAt).toLocaleString();
-      const sizeKb = (b.size / 1024).toFixed(1);
-
-      row.innerHTML = `
-        <div class="backup-info">
-          <span class="backup-name">${b.filename}</span>
-          <span class="backup-date">Created: ${dateStr} • ${sizeKb} KB</span>
-        </div>
-        <button class="btn btn-secondary btn-sm btn-restore" data-path="${b.fullPath}">
-          Restore
-        </button>
-      `;
-
-      row.querySelector('.btn-restore').addEventListener('click', async (e) => {
-        const fullPath = e.currentTarget.getAttribute('data-path');
-        if (confirm(`Restore Xbox library from backup ${b.filename}?`)) {
-          logConsole(`[Restore] Restoring ${fullPath}...`, 'warn');
-          const restoreRes = await window.api.restoreBackup(fullPath);
-          if (restoreRes.success) {
-            logConsole('[Restore] Successfully restored Xbox library state!', 'success');
-            backupsModal.style.display = 'none';
-            await triggerScan();
-          } else {
-            logConsole(`[Error] Restore failed: ${restoreRes.error}`, 'error');
-          }
-        }
-      });
-
-      backupsList.appendChild(row);
-    });
-  } catch (err) {
-    backupsList.innerHTML = `<div class="empty-backups">Error: ${err.message}</div>`;
-  }
-}
-
-// Render UI
+// Rendering
 function render() {
-  const hiddenGames = appState.games.filter(g => appState.hiddenAppIds.has(String(g.appid)));
   const missing = appState.games.filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)));
   const synced = appState.games.filter(g => g.isDuplicate);
   const allSteam = appState.games;
+  const hiddenGames = appState.games.filter(g => appState.hiddenAppIds.has(String(g.appid)));
   const xboxCustom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
 
-  // Update Stats (if elements exist)
+  // Update Stats
   if (statSteamGames) statSteamGames.textContent = allSteam.length;
   if (statLibrariesCount) statLibrariesCount.textContent = `${appState.libraries.length} library folder${appState.libraries.length === 1 ? '' : 's'}`;
-  
+
   const totalXbox = xboxCustom.length;
   if (statXboxGames) statXboxGames.textContent = totalXbox;
   if (statXboxStatus) statXboxStatus.textContent = `${totalXbox} custom title${totalXbox === 1 ? '' : 's'}`;
@@ -555,15 +525,12 @@ function renderCards() {
   } else if (appState.currentTab === 'hidden') {
     listToDisplay = appState.games.filter(g => appState.hiddenAppIds.has(String(g.appid)));
   } else if (appState.currentTab === 'xbox') {
-    // Show Xbox library titles
     const custom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
-
     if (q) {
       listToDisplay = custom.filter(x => (x.title || '').toLowerCase().includes(q));
     } else {
       listToDisplay = custom;
     }
-
     renderXboxCards(listToDisplay);
     return;
   }
@@ -571,7 +538,7 @@ function renderCards() {
   // Filter by search
   if (q) {
     listToDisplay = listToDisplay.filter(g =>
-      g.name.toLowerCase().includes(q) || g.appid.includes(q)
+      g.name.toLowerCase().includes(q) || String(g.appid).includes(q)
     );
   }
 
@@ -598,6 +565,8 @@ function renderCards() {
       statusPillText = 'Hidden';
     }
 
+    const exeName = game.primaryExecutable ? game.primaryExecutable.split(/[\\/]/).pop() : 'steam://';
+
     card.innerHTML = `
       <div class="card-header-art">
         ${isMissingTab ? `
@@ -606,34 +575,50 @@ function renderCards() {
         <span class="card-status-pill ${statusPillClass}">
           ${statusPillText}
         </span>
-        <img src="${game.headerUrl}" alt="${game.name}" onerror="this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg'; this.onerror=null;" />
+        <img src="${game.headerUrl || `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`}" alt="${game.name}" onerror="this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg'; this.onerror=null;" />
       </div>
       <div class="card-body">
         <h3 class="game-title" title="${game.name}">${game.name}</h3>
         <div class="game-meta">
           <span>AppID: ${game.appid}</span>
           <span>•</span>
-          <span>${game.primaryExecutable ? game.primaryExecutable : 'steam://'}</span>
+          <span>${exeName}</span>
         </div>
         ${game.isDuplicate && game.matchReason ? `
           <div class="match-reason-box">${game.matchReason}</div>
         ` : ''}
         <div class="card-footer-row">
-          <div class="game-path" title="${game.installLocation}">${game.installLocation}</div>
-          ${!game.isDuplicate ? (isHidden ? `
-            <button class="card-action-btn btn-unhide" data-appid="${game.appid}" title="Unhide and restore to suggestions">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Unhide</span>
-            </button>
-          ` : `
-            <button class="card-action-btn btn-hide" data-appid="${game.appid}" title="Hide from injection suggestions">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              <span>Hide</span>
-            </button>
-          `) : ''}
+          <div class="game-path" title="${game.installLocation || ''}">${game.installLocation || 'Steam Library'}</div>
+          <div class="card-actions-group">
+            ${game.isDuplicate ? `
+              <button class="card-action-btn btn-uninject" data-appid="${game.appid}" title="Remove title from Xbox App">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span>Uninject</span>
+              </button>
+            ` : (isHidden ? `
+              <button class="card-action-btn btn-unhide" data-appid="${game.appid}" title="Unhide and restore to suggestions">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Unhide</span>
+              </button>
+            ` : `
+              <button class="card-action-btn btn-hide" data-appid="${game.appid}" title="Hide from injection suggestions">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                <span>Hide</span>
+              </button>
+            `)}
+          </div>
         </div>
       </div>
     `;
+
+    // Button event bindings
+    const uninjectBtn = card.querySelector('.btn-uninject');
+    if (uninjectBtn) {
+      uninjectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        promptUninjectGame(game.appid, game.name);
+      });
+    }
 
     const hideBtn = card.querySelector('.btn-hide');
     if (hideBtn) {
@@ -675,7 +660,7 @@ function renderCards() {
         });
       }
 
-      // Handheld touch optimization: Tap anywhere on the card to toggle selection!
+      // Handheld touch optimization: Tap anywhere on the card to toggle selection
       card.addEventListener('click', (e) => {
         if (e.target.closest('.card-action-btn') || e.target.classList.contains('card-checkbox')) return;
         if (checkbox) {
@@ -711,27 +696,46 @@ function renderXboxCards(xboxGames) {
     card.className = 'game-card';
     const isCustom = entry.isCustom;
     const title = entry.title || 'Unknown Title';
-    const imagePath = entry.imagePath || entry.bannerUrl || 'https://assets.xboxservices.com/assets/79/32/7932e6a9-8588-4db9-8b89-299f01bc49b0.jpg';
+    const imagePath = entry.imagePath || entry.bannerUrl || entry.thumbnailFile || 'https://assets.xboxservices.com/assets/79/32/7932e6a9-8588-4db9-8b89-299f01bc49b0.jpg';
+    const canUninject = isCustom || (entry.id && String(entry.id).startsWith('steam_')) || entry.provider === 'steam';
 
     card.innerHTML = `
       <div class="card-header-art">
         <span class="card-status-pill ${isCustom ? 'pill-synced' : 'pill-native'}">
           ${isCustom ? (entry.source || 'Sideloaded') : 'Xbox Store'}
         </span>
-        <img src="${imagePath}" alt="${title}" onerror="this.style.opacity='0.2'" />
+        <img src="${imagePath}" alt="${title}" onerror="this.src='https://assets.xboxservices.com/assets/79/32/7932e6a9-8588-4db9-8b89-299f01bc49b0.jpg'" />
       </div>
       <div class="card-body">
         <h3 class="game-title" title="${title}">${title}</h3>
         <div class="game-meta">
           <span>${entry.id ? entry.id : 'ID'}</span>
           <span>•</span>
-          <span>${entry.storefront || entry.source || 'Xbox'}</span>
+          <span>${entry.storefront || entry.source || entry.provider || 'Xbox'}</span>
         </div>
-        <div class="game-path" title="${entry.launchUri || entry.installLocation || ''}">
-          ${entry.launchUri || entry.installLocation || 'Installed in Xbox'}
+        <div class="card-footer-row">
+          <div class="game-path" title="${entry.launchUri || entry.installLocation || ''}">
+            ${entry.launchUri || entry.installLocation || 'Installed in Xbox'}
+          </div>
+          <div class="card-actions-group">
+            ${canUninject ? `
+              <button class="card-action-btn btn-uninject" data-id="${entry.originalId || entry.id}" title="Remove title from Xbox App">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span>Uninject</span>
+              </button>
+            ` : ''}
+          </div>
         </div>
       </div>
     `;
+
+    const uninjectBtn = card.querySelector('.btn-uninject');
+    if (uninjectBtn) {
+      uninjectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        promptUninjectGame(entry.originalId || entry.id, title);
+      });
+    }
 
     gamesContainer.appendChild(card);
   });
@@ -750,33 +754,60 @@ function renderXboxCards(xboxGames) {
 function renderEmptyState() {
   const empty = document.createElement('div');
   empty.className = 'empty-state';
-  const isNoGamesAtAll = appState.games.length === 0;
 
-  empty.innerHTML = `
-    <div class="empty-icon-wrap">
-      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M6 11h4M8 9v4m7-2h.01M18 13h.01M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8z"/>
-      </svg>
-    </div>
-    <h3 class="empty-title">${isNoGamesAtAll ? 'No Steam Games Detected' : 'No titles in this view'}</h3>
-    <p class="empty-desc">
-      ${isNoGamesAtAll 
-        ? "We couldn't detect any Steam libraries on default drives. Add a custom library folder to synchronize with Xbox."
-        : "All games match your filters or none are currently available in this category."}
-    </p>
-    ${isNoGamesAtAll ? `
-      <div class="empty-actions">
+  if (appState.searchQuery) {
+    empty.innerHTML = `
+      <div class="empty-icon-wrap">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <h3 class="empty-title">No matching titles</h3>
+      <p class="empty-desc">No games match the query "${appState.searchQuery}". Clear your search to restore your library.</p>
+    `;
+  } else if (appState.currentTab === 'missing') {
+    empty.innerHTML = `
+      <div class="empty-icon-wrap">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="#00E575" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h3 class="empty-title">All Titles Synchronized</h3>
+      <p class="empty-desc">Every detected Steam title is already registered inside your PC Xbox App library.</p>
+    `;
+  } else if (appState.currentTab === 'synced') {
+    empty.innerHTML = `
+      <div class="empty-icon-wrap">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <h3 class="empty-title">No Synced Titles Yet</h3>
+      <p class="empty-desc">Switch to the "Missing" tab and tap "Sync to Xbox App" to inject titles.</p>
+    `;
+  } else if (appState.currentTab === 'hidden') {
+    empty.innerHTML = `
+      <div class="empty-icon-wrap">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      </div>
+      <h3 class="empty-title">No Hidden Titles</h3>
+      <p class="empty-desc">You have not hidden any games. Use the "Hide" button on any card to exclude it from suggestions.</p>
+    `;
+  } else {
+    empty.innerHTML = `
+      <div class="empty-icon-wrap">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3 class="empty-title">No Steam Games Detected</h3>
+      <p class="empty-desc">No Steam library folders were found automatically. Click "Add Folder" to specify a custom library directory.</p>
+      <div style="margin-top: 14px;">
         <button class="console-btn btn-ghost" id="emptyBtnFolder">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           <span>Add Folder</span>
         </button>
       </div>
-    ` : ''}
-  `;
+    `;
 
-  if (isNoGamesAtAll) {
-    const fBtn = empty.querySelector('#emptyBtnFolder');
-    if (fBtn) fBtn.addEventListener('click', () => btnAddFolder.click());
+    const folderBtn = empty.querySelector('#emptyBtnFolder');
+    if (folderBtn) {
+      folderBtn.addEventListener('click', () => {
+        btnAddFolder.click();
+      });
+    }
   }
 
   gamesContainer.appendChild(empty);
@@ -789,18 +820,28 @@ const controllerNav = {
   isActive: false,
   focusedEl: null,
   lastActionTime: 0,
-  repeatDelay: 190, // ms debounce between directional presses
+  repeatDelay: 180, // ms debounce between directional presses
   prevButtons: new Map(),
 
   init() {
     this.hintsHud = document.getElementById('controllerHintsHud');
 
-    // Mouse movement turns off controller mode and restores cursor
+    // Filter mouse movement: only deactivate if user moves mouse significantly (>30px)
+    let cumulativeMouseMove = 0;
+    let mouseMoveTimer = null;
     window.addEventListener('mousemove', (e) => {
-      if (e.movementX !== 0 || e.movementY !== 0) {
+      const dist = Math.hypot(e.movementX || 0, e.movementY || 0);
+      cumulativeMouseMove += dist;
+      if (mouseMoveTimer) clearTimeout(mouseMoveTimer);
+      mouseMoveTimer = setTimeout(() => {
+        cumulativeMouseMove = 0;
+      }, 400);
+
+      if (cumulativeMouseMove > 30) {
         if (this.isActive) {
           this.deactivate();
         }
+        cumulativeMouseMove = 0;
       }
     });
 
@@ -811,13 +852,43 @@ const controllerNav = {
       }
     }, { passive: true });
 
+    // Keyboard Arrow Navigation (First-Class Desktop / Handheld Fallback)
+    window.addEventListener('keydown', (e) => {
+      if (e.target && e.target.id === 'searchInput' && !['Escape', 'Tab'].includes(e.key)) {
+        return;
+      }
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        if (!this.isActive) this.activate();
+        if (e.key === 'ArrowRight') this.navigateDirection('right');
+        else if (e.key === 'ArrowLeft') this.navigateDirection('left');
+        else if (e.key === 'ArrowUp') this.navigateDirection('up');
+        else if (e.key === 'ArrowDown') this.navigateDirection('down');
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        if (this.focusedEl && !['BUTTON', 'INPUT'].includes(e.target.tagName)) {
+          e.preventDefault();
+          this.handleButtonA();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        this.handleButtonB();
+      } else if (e.key === 'Tab') {
+        if (!this.isActive) this.activate();
+        e.preventDefault();
+        this.navigateDirection(e.shiftKey ? 'left' : 'right');
+      }
+    });
+
     // Gamepad connection events
     window.addEventListener('gamepadconnected', (e) => {
       logConsole(`[Controller] Connected: ${e.gamepad.id}`, 'info');
+      this.updateGamepadPill(e.gamepad, true);
     });
 
     window.addEventListener('gamepaddisconnected', (e) => {
       logConsole(`[Controller] Disconnected: ${e.gamepad.id}`, 'warn');
+      this.updateGamepadPill(null, false);
       if (this.isActive) this.deactivate();
     });
 
@@ -825,13 +896,30 @@ const controllerNav = {
     requestAnimationFrame(this.poll.bind(this));
   },
 
-  activate() {
+  updateGamepadPill(pad, isConnected) {
+    if (!gamepadStatusPill || !gamepadStatusText) return;
+    if (isConnected && pad) {
+      const name = pad.id.includes('Xbox') ? 'Xbox Controller' : (pad.id.includes('360') ? 'Xbox 360' : 'Gamepad Connected');
+      gamepadStatusText.textContent = name;
+      gamepadStatusPill.classList.add('active');
+    } else {
+      gamepadStatusText.textContent = 'Controller Ready';
+      gamepadStatusPill.classList.remove('active');
+    }
+  },
+
+  activate(activePad = null) {
     this.isActive = true;
     document.body.classList.add('gamepad-mode');
     if (this.hintsHud) {
       this.hintsHud.style.display = 'block';
-      void this.hintsHud.offsetWidth; // Force reflow for CSS transition
+      void this.hintsHud.offsetWidth;
       this.hintsHud.classList.add('visible');
+    }
+    if (gamepadStatusPill) gamepadStatusPill.classList.add('active');
+    if (gamepadStatusText && activePad) {
+      const name = activePad.id.includes('Xbox') ? 'Xbox Controller Active' : 'Gamepad Active';
+      gamepadStatusText.textContent = name;
     }
 
     if (!this.focusedEl || !document.body.contains(this.focusedEl)) {
@@ -850,6 +938,8 @@ const controllerNav = {
         if (!this.isActive && this.hintsHud) this.hintsHud.style.display = 'none';
       }, 250);
     }
+    if (gamepadStatusPill) gamepadStatusPill.classList.remove('active');
+    if (gamepadStatusText) gamepadStatusText.textContent = 'Controller Ready';
     if (this.focusedEl) {
       this.focusedEl.classList.remove('gamepad-focused');
     }
@@ -858,36 +948,43 @@ const controllerNav = {
   poll(timestamp) {
     requestAnimationFrame(this.poll.bind(this));
 
-    // Only process if app is in focus
-    if (!document.hasFocus()) return;
-
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     let activePad = null;
+    let anyButtonPressed = false;
+
+    // Check ALL gamepads (never break early on inactive slots)
     for (let i = 0; i < gamepads.length; i++) {
-      if (gamepads[i] && gamepads[i].connected) {
-        activePad = gamepads[i];
+      const pad = gamepads[i];
+      if (!pad || !pad.connected) continue;
+
+      let padHasInput = false;
+      for (let b = 0; b < pad.buttons.length; b++) {
+        if (pad.buttons[b] && pad.buttons[b].pressed) {
+          padHasInput = true;
+          anyButtonPressed = true;
+          break;
+        }
+      }
+      if (!padHasInput && pad.axes) {
+        if (Math.abs(pad.axes[0] || 0) > 0.35 || Math.abs(pad.axes[1] || 0) > 0.35) {
+          padHasInput = true;
+        }
+      }
+
+      if (padHasInput) {
+        activePad = pad;
         break;
+      } else if (!activePad) {
+        activePad = pad;
       }
     }
 
     if (!activePad) return;
 
-    // Detect any input to wake up controller mode
-    let hasAnyInput = false;
-    for (let b = 0; b < activePad.buttons.length; b++) {
-      if (activePad.buttons[b].pressed) {
-        hasAnyInput = true;
-        break;
-      }
-    }
-    if (!hasAnyInput) {
-      if (Math.abs(activePad.axes[0] || 0) > 0.35 || Math.abs(activePad.axes[1] || 0) > 0.35) {
-        hasAnyInput = true;
-      }
-    }
-
-    if (hasAnyInput && !this.isActive) {
-      this.activate();
+    // Wake up on input
+    const hasStickInput = activePad.axes && (Math.abs(activePad.axes[0] || 0) > 0.35 || Math.abs(activePad.axes[1] || 0) > 0.35);
+    if ((anyButtonPressed || hasStickInput) && !this.isActive) {
+      this.activate(activePad);
     }
 
     if (!this.isActive) return;
@@ -907,8 +1004,8 @@ const controllerNav = {
     const dpadRight = isButtonPressed(15);
 
     // Read Left Stick with repeat delay
-    const axisX = activePad.axes[0] || 0;
-    const axisY = activePad.axes[1] || 0;
+    const axisX = activePad.axes ? (activePad.axes[0] || 0) : 0;
+    const axisY = activePad.axes ? (activePad.axes[1] || 0) : 0;
     const now = timestamp;
     const canRepeat = (now - this.lastActionTime) > this.repeatDelay;
 
@@ -955,12 +1052,15 @@ const controllerNav = {
 
   getFocusableElements() {
     // Check if modal is active
+    if (uninjectModal && uninjectModal.style.display === 'flex') {
+      return [btnCancelUninject, btnProceedUninject].filter(el => el && el.offsetParent !== null);
+    }
     if (confirmModal && confirmModal.style.display === 'flex') {
-      return [btnCancelSync, btnProceedSync];
+      return [btnCancelSync, btnProceedSync].filter(el => el && el.offsetParent !== null);
     }
     if (backupsModal && backupsModal.style.display === 'flex') {
       const restores = Array.from(backupsModal.querySelectorAll('.btn-restore'));
-      return [btnCloseBackups, ...restores];
+      return [btnCloseBackups, ...restores].filter(el => el && el.offsetParent !== null);
     }
 
     const elements = [];
@@ -985,9 +1085,12 @@ const controllerNav = {
     if (emptyBtnFolder) elements.push(emptyBtnFolder);
     if (btnSync && !btnSync.disabled) elements.push(btnSync);
 
-    // Game Cards
+    // Game Cards & Action Buttons
     const cards = Array.from(document.querySelectorAll('.game-card'));
     elements.push(...cards);
+
+    const actionBtns = Array.from(document.querySelectorAll('.card-action-btn'));
+    elements.push(...actionBtns);
 
     return elements.filter(el => el && el.offsetParent !== null);
   },
@@ -1034,7 +1137,7 @@ const controllerNav = {
       const cards = Array.from(document.querySelectorAll('.game-card'));
       if (cards.includes(this.focusedEl)) {
         const container = document.getElementById('gamesContainer');
-        const colWidth = (cards[0] && cards[0].offsetWidth) ? cards[0].offsetWidth + 18 : 320;
+        const colWidth = (cards[0] && cards[0].offsetWidth) ? cards[0].offsetWidth + 20 : 350;
         const cols = Math.max(1, Math.floor((container ? container.offsetWidth : 900) / colWidth));
         const cardIdx = cards.indexOf(this.focusedEl);
         const targetCardIdx = cardIdx + cols;
@@ -1049,7 +1152,7 @@ const controllerNav = {
       const cards = Array.from(document.querySelectorAll('.game-card'));
       if (cards.includes(this.focusedEl)) {
         const container = document.getElementById('gamesContainer');
-        const colWidth = (cards[0] && cards[0].offsetWidth) ? cards[0].offsetWidth + 18 : 320;
+        const colWidth = (cards[0] && cards[0].offsetWidth) ? cards[0].offsetWidth + 20 : 350;
         const cols = Math.max(1, Math.floor((container ? container.offsetWidth : 900) / colWidth));
         const cardIdx = cards.indexOf(this.focusedEl);
         const targetCardIdx = cardIdx - cols;
@@ -1070,16 +1173,14 @@ const controllerNav = {
 
   handleButtonA() {
     if (!this.focusedEl) return;
-    if (this.focusedEl.classList.contains('game-card')) {
-      this.focusedEl.click();
-    } else if (this.focusedEl.tagName === 'INPUT' && this.focusedEl.type === 'checkbox') {
-      this.focusedEl.click();
-    } else {
-      this.focusedEl.click();
-    }
+    this.focusedEl.click();
   },
 
   handleButtonB() {
+    if (uninjectModal && uninjectModal.style.display === 'flex') {
+      btnCancelUninject.click();
+      return;
+    }
     if (confirmModal && confirmModal.style.display === 'flex') {
       btnCancelSync.click();
       return;
@@ -1119,3 +1220,130 @@ const controllerNav = {
   }
 };
 
+// Logging Console
+function logConsole(message, type = 'info') {
+  const line = document.createElement('div');
+  line.className = `log-line log-${type}`;
+
+  const time = new Date().toLocaleTimeString();
+  line.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg">${escapeHtml(message)}</span>`;
+  consoleLogs.appendChild(line);
+  consoleLogs.scrollTop = consoleLogs.scrollHeight;
+
+  if (drawerPreviewText) {
+    drawerPreviewText.textContent = message;
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Confirmation Modal & Sync Execution
+function openConfirmModal(games) {
+  modalGameCount.textContent = games.length;
+  modalProcessWarning.style.display = appState.processInfo.isRunning ? 'block' : 'none';
+  confirmModal.style.display = 'flex';
+  if (typeof controllerNav !== 'undefined' && controllerNav.isActive) {
+    controllerNav.applyFocus(btnProceedSync);
+  }
+}
+
+async function executeSync() {
+  const toSync = getSelectedMissingGames();
+  if (toSync.length === 0) return;
+
+  appState.isSyncing = true;
+  btnSync.disabled = true;
+  syncBtnLabel.textContent = 'Syncing...';
+  logConsole(`[Sync] Initiating injection for ${toSync.length} Steam games...`, 'info');
+
+  try {
+    // If Xbox processes are active, close them gracefully first
+    if (appState.processInfo.isRunning) {
+      logConsole('[Sync] Closing active Xbox App processes before sync...', 'info');
+      await window.api.closeProcesses();
+    }
+
+    const res = await window.api.syncGames(toSync);
+    if (!res.success) {
+      throw new Error(res.error || 'Sync failed.');
+    }
+
+    logConsole(`[Sync] Completed successfully! ${res.injectedCount} titles injected into Xbox App.`, 'success');
+    await triggerScan();
+  } catch (err) {
+    logConsole(`[Sync Error] ${err.message}`, 'error');
+  } finally {
+    appState.isSyncing = false;
+    btnSync.disabled = false;
+    syncBtnLabel.textContent = 'Sync to Xbox App';
+  }
+}
+
+// Backups Modal
+async function openBackupsModal() {
+  backupsList.innerHTML = '<div class="empty-backups">Loading backups...</div>';
+  backupsModal.style.display = 'flex';
+
+  try {
+    const res = await window.api.getBackups();
+    if (!res.success || res.backups.length === 0) {
+      backupsList.innerHTML = '<div class="empty-backups">No previous snapshots found.</div>';
+      return;
+    }
+
+    backupsList.innerHTML = '';
+    res.backups.forEach(b => {
+      const item = document.createElement('div');
+      item.className = 'backup-item';
+      const date = new Date(b.createdAt).toLocaleString();
+      const sizeKb = (b.size / 1024).toFixed(1);
+
+      item.innerHTML = `
+        <div class="backup-info">
+          <div class="backup-name">${escapeHtml(b.filename)}</div>
+          <div class="backup-meta">Created: ${date} • ${sizeKb} KB</div>
+        </div>
+        <button class="console-btn btn-ghost btn-restore" data-path="${escapeHtml(b.fullPath)}">
+          Restore Snapshot
+        </button>
+      `;
+
+      const restoreBtn = item.querySelector('.btn-restore');
+      restoreBtn.addEventListener('click', async () => {
+        await restoreSnapshot(b.fullPath, b.filename);
+      });
+
+      backupsList.appendChild(item);
+    });
+
+    if (typeof controllerNav !== 'undefined' && controllerNav.isActive) {
+      controllerNav.applyFocus(btnCloseBackups);
+    }
+  } catch (err) {
+    backupsList.innerHTML = `<div class="empty-backups">Error loading backups: ${err.message}</div>`;
+  }
+}
+
+async function restoreSnapshot(path, name) {
+  logConsole(`[Restore] Restoring Xbox App snapshot: ${name}...`, 'info');
+  try {
+    const res = await window.api.restoreBackup(path);
+    if (res.success) {
+      logConsole(`[Restore] Successfully restored snapshot: ${name}`, 'success');
+      backupsModal.style.display = 'none';
+      await triggerScan();
+    } else {
+      logConsole(`[Restore Error] Failed to restore: ${res.error}`, 'error');
+    }
+  } catch (e) {
+    logConsole(`[Restore Error] ${e.message}`, 'error');
+  }
+}

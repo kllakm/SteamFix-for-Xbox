@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('api', {
   checkProcesses: () => ipcRenderer.invoke('check-processes'),
   closeProcesses: () => ipcRenderer.invoke('close-processes'),
   syncGames: (games) => ipcRenderer.invoke('sync-games', games),
+  uninjectGames: (appIds) => ipcRenderer.invoke('uninject-games', appIds),
+  uninjectGame: (appId) => ipcRenderer.invoke('uninject-games', [appId]),
   getBackups: () => ipcRenderer.invoke('get-backups'),
   restoreBackup: (backupPath) => ipcRenderer.invoke('restore-backup', backupPath),
   selectFolder: () => ipcRenderer.invoke('select-folder'),

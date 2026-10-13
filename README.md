@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.3.4-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.4.0-00E575.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-1A9FFF.svg?style=flat-square)](#handheld-experience)
@@ -149,6 +149,26 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+
+### [v1.4.0] - 2026-10-13
+- **Gamepad & Controller Engine Overhaul:**
+  - Multi-gamepad discovery across all controller slots, eliminating silent failures on systems with virtual controller adapters or background utilities.
+  - Added smart mouse movement filtering (requires cumulative distance > 30px), completely preventing micro-jitter from optical mice or handheld gyros from prematurely deactivating controller navigation.
+  - First-class Keyboard navigation fallback (`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Enter`, `Space`, `Escape`, `Tab`) for seamless interaction in Desktop mode on ROG Ally, Legion Go, and Windows handhelds.
+  - Dynamic Gamepad Status Pill in Horizon Topbar displaying real-time controller connectivity (`Xbox Controller Active`, `Gamepad Connected`).
+- **Responsive Game Tiles & Clean Proportions:**
+  - Standardized showcase cards with rigid 340px minimum width (`minmax(340px, 1fr)`) and media query breakpoints (down to 290px and 1-column mobile/handheld layout) to completely eliminate squashed or clipped cards.
+  - Authentic 16:9 widescreen presentation with minimum 175px artwork height, ensuring high-definition CDN banners never minimize or overlap selection checkboxes.
+  - Dynamic 2-line title clamping (`-webkit-line-clamp: 2`) with uniform height to keep long game titles 100% legible, clean, and unclipped.
+  - Formatted metadata tags and flexible card action bar with dedicated tooltips and clear visual hierarchy.
+- **Deep Xbox App Discovery & Zero False Positives:**
+  - Comprehensive inspection across Xbox App's `ThirdPartyLibraries` (`steam`, `epic`, `gog`, `bnet`, `ea`, `ubi`) and `ExternalAppShortcut` repositories.
+  - Games previously scanned or added to the Xbox App library are now accurately identified and will NEVER appear as injectable in the "Missing" tab.
+  - Multi-attribute deduplication engine matching AppIDs, launch protocols, normalized titles, executable filenames, and installation folders.
+- **Full Game Uninject & Database Rollback:**
+  - Added one-click "Uninject" capability directly on game cards in "Synced" and "Xbox Library" tabs.
+  - Safely purges injected entries from `CustomLibraryManagement.manifest`, `ThirdPartyLibraries`, and `ExternalAppShortcut`, removing companion thumbnail files while generating automatic timestamped `.bak` safety snapshots.
+  - Interactive uninject confirmation dialog with real-time UI updates and automated rescan.
 
 ### [v1.3.4] - 2026-10-12
 - **Empty Library State Cleanup & Polish:**

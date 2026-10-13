@@ -5,7 +5,7 @@ const packageJson = require('../../package.json');
 const { scanSteamLibraries } = require('./steamScanner');
 const { inspectXboxApp, deduplicateSteamGames, getXboxLocalStatePath } = require('./xboxInspector');
 const { checkXboxProcesses, closeXboxProcesses } = require('./processSafety');
-const { injectSteamGames, listBackups, restoreBackup } = require('./injector');
+const { injectSteamGames, uninjectSteamGames, listBackups, restoreBackup } = require('./injector');
 const { createMockSteamLibrary } = require('./fixtureGenerator');
 
 let mainWindow = null;
@@ -114,7 +114,7 @@ ipcMain.handle('close-processes', async () => {
 // IPC Handler: Sync Games
 ipcMain.handle('sync-games', async (_event, games) => {
   try {
-    const result = injectSteamGames(games, (progress) => {
+    const result = await injectSteamGames(games, (progress) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('sync-progress', progress);
       }
@@ -122,6 +122,21 @@ ipcMain.handle('sync-games', async (_event, games) => {
     return result;
   } catch (error) {
     console.error('Sync error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// IPC Handler: Uninject Games
+ipcMain.handle('uninject-games', async (_event, appIds) => {
+  try {
+    const result = uninjectSteamGames(appIds, (progress) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('sync-progress', progress);
+      }
+    });
+    return result;
+  } catch (error) {
+    console.error('Uninject error:', error);
     return { success: false, error: error.message };
   }
 });
