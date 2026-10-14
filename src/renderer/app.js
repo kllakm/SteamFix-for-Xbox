@@ -22,7 +22,7 @@ function saveHiddenAppIds(set) {
 
 // Global Application State
 const appState = {
-  version: '1.6.1',
+  version: '1.6.3',
   currentSection: 'library',
   currentSectionIndex: 0,
   currentTab: 'missing',
@@ -354,9 +354,15 @@ function switchSection(secKey) {
   if (!SECTIONS.includes(secKey)) return;
   const oldIndex = appState.currentSectionIndex;
   const newIndex = SECTIONS.indexOf(secKey);
-  if (oldIndex === newIndex && pages[secKey].classList.contains('active')) return;
+  if (oldIndex === newIndex && pages[secKey] && pages[secKey].classList.contains('active')) return;
 
   const isForward = newIndex > oldIndex;
+
+  // Keep slider pinned to left: 0 at all times
+  const pagesSlider = document.getElementById('pagesSlider');
+  if (pagesSlider) {
+    pagesSlider.scrollLeft = 0;
+  }
 
   // Update nav buttons
   Object.keys(navBtns).forEach(k => {
@@ -370,7 +376,7 @@ function switchSection(secKey) {
 
     if (idx === newIndex) {
       // Incoming page
-      pageEl.classList.remove('slide-left', 'slide-right');
+      pageEl.classList.remove('slide-left', 'slide-right', 'settled');
       pageEl.classList.add(isForward ? 'slide-right' : 'slide-left');
       // Force reflow
       void pageEl.offsetWidth;
@@ -378,10 +384,10 @@ function switchSection(secKey) {
       pageEl.classList.add('active');
     } else if (idx === oldIndex) {
       // Outgoing page
-      pageEl.classList.remove('active');
+      pageEl.classList.remove('active', 'settled');
       pageEl.classList.add(isForward ? 'slide-left' : 'slide-right');
     } else {
-      pageEl.classList.remove('active', 'slide-left', 'slide-right');
+      pageEl.classList.remove('active', 'slide-left', 'slide-right', 'settled');
       pageEl.classList.add(idx < newIndex ? 'slide-left' : 'slide-right');
     }
   });
@@ -401,10 +407,18 @@ function switchSection(secKey) {
     updateSettingsUI();
   }
 
-  // Update controller focus
+  // After transition settles (320ms transition duration):
   setTimeout(() => {
-    controllerNav.focusFirstAvailable();
-  }, 100);
+    if (pagesSlider) pagesSlider.scrollLeft = 0;
+    const activePage = pages[secKey];
+    if (activePage) {
+      activePage.classList.add('settled');
+    }
+    // Only focus if controller is actively in use
+    if (document.body.classList.contains('controller-active')) {
+      controllerNav.focusFirstAvailable();
+    }
+  }, 340);
 }
 
 function switchSectionByOffset(offset) {
@@ -1050,6 +1064,22 @@ const controllerNav = {
   prevButtons: new Map(),
 
   init() {
+    // Keep slider anchored to left: 0
+    const slider = document.getElementById('pagesSlider');
+    if (slider) {
+      slider.addEventListener('scroll', () => {
+        if (slider.scrollLeft !== 0) slider.scrollLeft = 0;
+      });
+    }
+
+    // Gamepad connection events
+    window.addEventListener('gamepadconnected', () => {
+      document.body.classList.add('controller-active');
+      if (!this.focusedEl) {
+        this.focusFirstAvailable();
+      }
+    });
+
     // Keyboard navigation mapping
     window.addEventListener('keydown', (e) => {
       if (e.target && e.target.id === 'searchInput' && !['Escape', 'Tab', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
@@ -1058,6 +1088,7 @@ const controllerNav = {
 
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
+        document.body.classList.add('controller-active');
         if (e.key === 'ArrowRight') this.navigateDirection('right');
         else if (e.key === 'ArrowLeft') this.navigateDirection('left');
         else if (e.key === 'ArrowUp') this.navigateDirection('up');
@@ -1073,69 +1104,99 @@ const controllerNav = {
       } else if (e.key === 'q' || e.key === 'Q') {
         if (!['INPUT'].includes(e.target.tagName)) {
           e.preventDefault();
+          document.body.classList.add('controller-active');
           switchSectionByOffset(-1);
         }
       } else if (e.key === 'e' || e.key === 'E') {
         if (!['INPUT'].includes(e.target.tagName)) {
           e.preventDefault();
+          document.body.classList.add('controller-active');
           switchSectionByOffset(1);
         }
       }
     });
 
-  let lastMouseX = -1;
-  let lastMouseY = -1;
-  window.addEventListener('mousemove', (e) => {
-    if (lastMouseX !== -1 && lastMouseY !== -1) {
-      const delta = Math.abs(e.clientX - lastMouseX) + Math.abs(e.clientY - lastMouseY);
-      if (delta > 25) {
-        document.body.classList.remove('controller-active');
-        if (controllerNav.focusedEl) {
-          controllerNav.focusedEl.classList.remove('gamepad-focused');
-          controllerNav.focusedEl = null;
+    let lastMouseX = -1;
+    let lastMouseY = -1;
+    window.addEventListener('mousemove', (e) => {
+      if (lastMouseX !== -1 && lastMouseY !== -1) {
+        const delta = Math.abs(e.clientX - lastMouseX) + Math.abs(e.clientY - lastMouseY);
+        if (delta > 25) {
+          document.body.classList.remove('controller-active');
+          if (controllerNav.focusedEl) {
+            controllerNav.focusedEl.classList.remove('gamepad-focused');
+            controllerNav.focusedEl = null;
+          }
+        }
+      }
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    });
+
+    window.addEventListener('mousedown', () => {
+      document.body.classList.remove('controller-active');
+      if (controllerNav.focusedEl) {
+        controllerNav.focusedEl.classList.remove('gamepad-focused');
+        controllerNav.focusedEl = null;
+      }
+    });
+
+    // Start continuous requestAnimationFrame polling loop
+    requestAnimationFrame(this.poll.bind(this));
+  },
+
+  poll(timestamp) {
+    // Continuous RAF loop
+    requestAnimationFrame(this.poll.bind(this));
+
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (let i = 0; i < gamepads.length; i++) {
+      const pad = gamepads[i];
+      if (!pad || !pad.connected) continue;
+      this.processGamepadInput(pad, timestamp);
+    }
+  },
+
+  processGamepadInput(pad, timestamp) {
+    let anyInputDetected = false;
+
+    // Scan all buttons on gamepad for activity
+    if (pad.buttons) {
+      for (let b = 0; b < pad.buttons.length; b++) {
+        const btn = pad.buttons[b];
+        if (btn && (btn.pressed || btn.value > 0.15)) {
+          anyInputDetected = true;
+          break;
         }
       }
     }
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-  });
 
-  window.addEventListener('mousedown', () => {
-    document.body.classList.remove('controller-active');
-    if (controllerNav.focusedEl) {
-      controllerNav.focusedEl.classList.remove('gamepad-focused');
-      controllerNav.focusedEl = null;
+    // Scan all analog stick axes for activity beyond deadzone
+    if (!anyInputDetected && pad.axes) {
+      for (let a = 0; a < pad.axes.length; a++) {
+        if (Math.abs(pad.axes[a] || 0) > 0.2) {
+          anyInputDetected = true;
+          break;
+        }
+      }
     }
-  });
 
-  // Start continuous requestAnimationFrame polling loop
-  requestAnimationFrame(this.poll.bind(this));
-},
+    // If any controller button or stick activity occurred, activate controller mode
+    if (anyInputDetected && !document.body.classList.contains('controller-active')) {
+      document.body.classList.add('controller-active');
+      if (!this.focusedEl) {
+        this.focusFirstAvailable();
+      }
+    }
 
-poll(timestamp) {
-  // Continuous RAF loop
-  requestAnimationFrame(this.poll.bind(this));
-
-  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-  for (let i = 0; i < gamepads.length; i++) {
-    const pad = gamepads[i];
-    if (!pad || !pad.connected) continue;
-    this.processGamepadInput(pad, timestamp);
-  }
-},
-
-processGamepadInput(pad, timestamp) {
-  let anyInputDetected = false;
-
-  const isButtonPressed = (btnIdx) => {
-    const btn = pad.buttons && pad.buttons[btnIdx];
-    const isDown = !!(btn && (btn.pressed || btn.value > 0.35));
-    if (isDown) anyInputDetected = true;
-    const key = `${pad.index}_${btnIdx}`;
-    const wasDown = !!this.prevButtons.get(key);
-    this.prevButtons.set(key, isDown);
-    return isDown && !wasDown;
-  };
+    const isButtonPressed = (btnIdx) => {
+      const btn = pad.buttons && pad.buttons[btnIdx];
+      const isDown = !!(btn && (btn.pressed || btn.value > 0.35));
+      const key = `${pad.index}_${btnIdx}`;
+      const wasDown = !!this.prevButtons.get(key);
+      this.prevButtons.set(key, isDown);
+      return isDown && !wasDown;
+    };
 
     // D-Pad buttons
     const dpadUp = isButtonPressed(12);
@@ -1148,23 +1209,11 @@ processGamepadInput(pad, timestamp) {
     const axisY = (pad.axes && pad.axes.length > 1) ? (pad.axes[1] || 0) : 0;
     const stickThreshold = 0.45;
 
-    if (Math.abs(axisX) > 0.2 || Math.abs(axisY) > 0.2) {
-      anyInputDetected = true;
-    }
-
     let dir = null;
     if (dpadLeft || axisX < -stickThreshold) dir = 'left';
     else if (dpadRight || axisX > stickThreshold) dir = 'right';
     else if (dpadUp || axisY < -stickThreshold) dir = 'up';
     else if (dpadDown || axisY > stickThreshold) dir = 'down';
-
-    // If any controller button or stick activity occurred, activate controller mode
-    if (anyInputDetected && !document.body.classList.contains('controller-active')) {
-      document.body.classList.add('controller-active');
-      if (!this.focusedEl) {
-        this.focusFirstAvailable();
-      }
-    }
 
     const now = timestamp || performance.now();
     if (dir) {
@@ -1262,7 +1311,24 @@ processGamepadInput(pad, timestamp) {
     this.focusedEl = el;
     el.classList.add('gamepad-focused');
     el.focus({ preventScroll: true });
-    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+
+    // Guard pagesSlider from any horizontal scroll
+    const slider = document.getElementById('pagesSlider');
+    if (slider && slider.scrollLeft !== 0) {
+      slider.scrollLeft = 0;
+    }
+
+    // Scroll container vertically only if element is out of visible view
+    const scrollParent = el.closest('.settings-grid-layout, .games-showcase, .backups-page-card, .console-page');
+    if (scrollParent) {
+      const elRect = el.getBoundingClientRect();
+      const parentRect = scrollParent.getBoundingClientRect();
+      if (elRect.top < parentRect.top) {
+        scrollParent.scrollTop -= (parentRect.top - elRect.top + 16);
+      } else if (elRect.bottom > parentRect.bottom) {
+        scrollParent.scrollTop += (elRect.bottom - parentRect.bottom + 16);
+      }
+    }
   },
 
   navigateDirection(dir) {

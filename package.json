@@ -1,7 +1,7 @@
 {
   "name": "xbox-steam-bridge",
   "productName": "XboxSteamBridge",
-  "version": "1.6.1",
+  "version": "1.6.3",
   "description": "Seamlessly integrates local Steam libraries with PC Xbox App, deduplicating titles and injecting Steam launch URIs and CDN grid artwork.",
   "main": "src/main/main.js",
   "scripts": {

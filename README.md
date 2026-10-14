@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.6.1-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.6.3-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-00A2FF.svg?style=flat-square)](#handheld-experience)
@@ -150,8 +150,27 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+ 
+### [v1.6.3] - 2026-10-14
+- **Clean Pill-Free Second Row Navigation (Library Categories):**
+  - Removed all enclosing pill borders, background shapes, and pill bubble outlines from category tabs (`Missing from Xbox`, `Synced`, `All Steam`, `Hidden`, `Xbox Library`).
+  - Switched to clean typographic styling matching the top menu navigation: pure text with subtle hover color transitions, cyan glowing active text, and luminous underline glow bar indicators.
+  - Stripped background pills from category item count badges, rendering them as clean mono indicators that illuminate cyan when active.
+- **Expanded Full Screen Experience (FSE) Layout & Padding:**
+  - Increased topbar height to 84px with generous top/bottom padding to give the header row ample breathing room.
+  - Expanded second-row category strip padding (`24px 0 18px 0`) and action bar padding (`18px 0 24px 0`) to eliminate top-edge visual crowding on TVs and handheld screens.
+  - Expanded page padding (`0 48px 32px 48px`) and footer height (56px) for a luxurious 10-foot console experience.
 
-### [v1.6.1] - 2026-10-14
+### [v1.6.2] - 2026-10-14
+- **Fixed Page Slide Overflow & Left-Edge Clipping:**
+  - Resolved horizontal viewport scrolling bug caused by native `scrollIntoView()` executing during CSS slide transitions, which previously shifted page slider `scrollLeft` and permanently clipped the left edge of cards and headers.
+  - Eliminated ancestor horizontal scrolling by replacing `scrollIntoView` with safe container-targeted vertical scrolling (`scrollTop`) and enforced `.settled` state (`transform: none`) on transition completion.
+  - Added continuous scroll anchoring (`scrollLeft = 0`) on `#pagesSlider` and enforced `contain: paint` with `overflow-x: hidden`.
+- **Restored Settings Reference Guide Bumpers & Triggers:**
+  - Fixed visibility of `[LB]`, `[RB]`, `[LT]`, and `[RT]` badges in Settings "Controller & Handheld Navigation" reference guide so they are always displayed regardless of controller active state.
+  - Distinctly separated static reference guide badges from dynamic in-game controller prompts.
+- **Improved Controller Activation & Input Detection:**
+  - Expanded gamepad activity check to immediately detect presses on all buttons (including bumpers, triggers, and action buttons) as well as stick movements and connection events, ensuring hints and controller focus activate reliably across all supported gamepads and keyboard shortcuts.
 - **Centered Category Navigation Row (`LT` ... `RT`):**
   - Horizontally centered the subnav strip (`Missing from Xbox`, `Synced`, `All Steam`, `Hidden`, `Xbox Library`) across the full width of the screen.
 - **Page Slide Alignment & Bounds Fix:**
