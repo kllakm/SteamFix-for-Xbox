@@ -28,7 +28,7 @@
 
       <!-- Center: Main Section Navigation (Centered at all times, No pill borders) -->
       <nav class="console-section-nav" aria-label="Main Sections">
-        <span class="controller-badge badge-bumper" id="badgeLB" title="Left Bumper (LB) / Q Key">LB</span>
+        <span class="controller-badge badge-bumper btn-lb" id="badgeLB" title="Left Bumper (LB) / Q Key">LB</span>
         <div class="section-nav-links" id="sectionNavLinks">
           <button class="section-nav-btn active" data-section="library" id="navBtnLibrary">
             <span class="nav-text">Library</span>
@@ -47,7 +47,7 @@
             <span class="nav-glow-bar"></span>
           </button>
         </div>
-        <span class="controller-badge badge-bumper" id="badgeRB" title="Right Bumper (RB) / E Key">RB</span>
+        <span class="controller-badge badge-bumper btn-rb" id="badgeRB" title="Right Bumper (RB) / E Key">RB</span>
       </nav>
 
       <!-- Right: Minimal Clean Icon Utilities -->
@@ -87,7 +87,7 @@
           <!-- Category Tabs Strip (LT / RT Triggers) -->
           <nav class="console-subnav-strip" aria-label="Library Categories">
             <div class="subnav-container">
-              <span class="controller-badge badge-trigger" id="badgeLT" title="Left Trigger (LT)">LT</span>
+              <span class="controller-badge badge-trigger btn-lt" id="badgeLT" title="Left Trigger (LT)">LT</span>
               <div class="console-tabs" id="categoryTabsContainer">
                 <button class="nav-tab tab-btn active" data-tab="missing" id="tabMissing">
                   <span class="tab-label">Missing from Xbox</span>
@@ -115,7 +115,7 @@
                   <span class="tab-indicator-pill"></span>
                 </button>
               </div>
-              <span class="controller-badge badge-trigger" id="badgeRT" title="Right Trigger (RT)">RT</span>
+              <span class="controller-badge badge-trigger btn-rt" id="badgeRT" title="Right Trigger (RT)">RT</span>
             </div>
           </nav>
 
@@ -280,10 +280,37 @@
                 <div class="guide-item"><span class="btn-badge btn-b">B</span> <span class="guide-text">Back / Cancel Dialog</span></div>
                 <div class="guide-item"><span class="btn-badge btn-x">X</span> <span class="guide-text">Quick Toggle Select All</span></div>
                 <div class="guide-item"><span class="btn-badge btn-y">Y</span> <span class="guide-text">Scan Libraries Now</span></div>
-                <div class="guide-item"><span class="btn-badge btn-bumper">LB / RB</span> <span class="guide-text">Switch Top Pages (Library, Sync, Backups, Settings)</span></div>
-                <div class="guide-item"><span class="btn-badge btn-trigger">LT / RT</span> <span class="guide-text">Switch Library Category Tabs</span></div>
-                <div class="guide-item"><span class="btn-badge btn-menu">☰</span> <span class="guide-text">Toggle Full Screen Experience (FSE)</span></div>
-                <div class="guide-item"><span class="btn-badge btn-dpad">D-Pad / Stick</span> <span class="guide-text">2D Spatial Card & UI Focus Navigation</span></div>
+                <div class="guide-item">
+                  <div class="badge-pair">
+                    <span class="controller-badge badge-bumper btn-lb">LB</span>
+                    <span class="controller-badge badge-bumper btn-rb">RB</span>
+                  </div>
+                  <span class="guide-text">Switch Top Pages</span>
+                </div>
+                <div class="guide-item">
+                  <div class="badge-pair">
+                    <span class="controller-badge badge-trigger btn-lt">LT</span>
+                    <span class="controller-badge badge-trigger btn-rt">RT</span>
+                  </div>
+                  <span class="guide-text">Switch Category Tabs</span>
+                </div>
+                <div class="guide-item"><span class="btn-badge btn-menu" title="Menu button">☰</span> <span class="guide-text">Toggle Full Screen Experience (FSE)</span></div>
+                <div class="guide-item">
+                  <div class="badge-pair">
+                    <span class="btn-badge btn-stick" title="Left Thumbstick">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+                        <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
+                      </svg>
+                    </span>
+                    <span class="btn-badge btn-dpad-icon" title="Directional Pad">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <span class="guide-text">2D Spatial Card & UI Focus</span>
+                </div>
               </div>
             </div>
           </div>
@@ -301,14 +328,22 @@
         <span class="status-item" id="footerXboxStatus">Xbox LocalState Ready</span>
       </div>
 
-      <!-- Controller Legend (Always Clean & Visible) -->
+      <!-- Controller Legend (Shown ONLY when controller is actively being used) -->
       <div class="footer-controller-legend" id="footerControllerLegend">
         <span class="hud-item"><span class="btn-badge btn-a">A</span> Select</span>
         <span class="hud-item"><span class="btn-badge btn-b">B</span> Back</span>
         <span class="hud-item"><span class="btn-badge btn-x">X</span> Toggle All</span>
         <span class="hud-item"><span class="btn-badge btn-y">Y</span> Scan</span>
-        <span class="hud-item"><span class="btn-badge btn-bumper">LB / RB</span> Page</span>
-        <span class="hud-item"><span class="btn-badge btn-trigger">LT / RT</span> Category</span>
+        <span class="hud-item">
+          <span class="controller-badge badge-bumper btn-lb">LB</span>
+          <span class="controller-badge badge-bumper btn-rb">RB</span>
+          Page
+        </span>
+        <span class="hud-item">
+          <span class="controller-badge badge-trigger btn-lt">LT</span>
+          <span class="controller-badge badge-trigger btn-rt">RT</span>
+          Category
+        </span>
         <span class="hud-item"><span class="btn-badge btn-menu">☰</span> FSE</span>
       </div>
     </footer>

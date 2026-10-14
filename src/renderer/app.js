@@ -22,7 +22,7 @@ function saveHiddenAppIds(set) {
 
 // Global Application State
 const appState = {
-  version: '1.6.0',
+  version: '1.6.1',
   currentSection: 'library',
   currentSectionIndex: 0,
   currentTab: 'missing',
@@ -1083,31 +1083,59 @@ const controllerNav = {
       }
     });
 
-    // Start continuous requestAnimationFrame polling loop
-    requestAnimationFrame(this.poll.bind(this));
-  },
-
-  poll(timestamp) {
-    // Continuous RAF loop
-    requestAnimationFrame(this.poll.bind(this));
-
-    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    for (let i = 0; i < gamepads.length; i++) {
-      const pad = gamepads[i];
-      if (!pad || !pad.connected) continue;
-      this.processGamepadInput(pad, timestamp);
+  let lastMouseX = -1;
+  let lastMouseY = -1;
+  window.addEventListener('mousemove', (e) => {
+    if (lastMouseX !== -1 && lastMouseY !== -1) {
+      const delta = Math.abs(e.clientX - lastMouseX) + Math.abs(e.clientY - lastMouseY);
+      if (delta > 25) {
+        document.body.classList.remove('controller-active');
+        if (controllerNav.focusedEl) {
+          controllerNav.focusedEl.classList.remove('gamepad-focused');
+          controllerNav.focusedEl = null;
+        }
+      }
     }
-  },
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  });
 
-  processGamepadInput(pad, timestamp) {
-    const isButtonPressed = (btnIdx) => {
-      const btn = pad.buttons && pad.buttons[btnIdx];
-      const isDown = !!(btn && (btn.pressed || btn.value > 0.35));
-      const key = `${pad.index}_${btnIdx}`;
-      const wasDown = !!this.prevButtons.get(key);
-      this.prevButtons.set(key, isDown);
-      return isDown && !wasDown;
-    };
+  window.addEventListener('mousedown', () => {
+    document.body.classList.remove('controller-active');
+    if (controllerNav.focusedEl) {
+      controllerNav.focusedEl.classList.remove('gamepad-focused');
+      controllerNav.focusedEl = null;
+    }
+  });
+
+  // Start continuous requestAnimationFrame polling loop
+  requestAnimationFrame(this.poll.bind(this));
+},
+
+poll(timestamp) {
+  // Continuous RAF loop
+  requestAnimationFrame(this.poll.bind(this));
+
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (let i = 0; i < gamepads.length; i++) {
+    const pad = gamepads[i];
+    if (!pad || !pad.connected) continue;
+    this.processGamepadInput(pad, timestamp);
+  }
+},
+
+processGamepadInput(pad, timestamp) {
+  let anyInputDetected = false;
+
+  const isButtonPressed = (btnIdx) => {
+    const btn = pad.buttons && pad.buttons[btnIdx];
+    const isDown = !!(btn && (btn.pressed || btn.value > 0.35));
+    if (isDown) anyInputDetected = true;
+    const key = `${pad.index}_${btnIdx}`;
+    const wasDown = !!this.prevButtons.get(key);
+    this.prevButtons.set(key, isDown);
+    return isDown && !wasDown;
+  };
 
     // D-Pad buttons
     const dpadUp = isButtonPressed(12);
@@ -1120,11 +1148,23 @@ const controllerNav = {
     const axisY = (pad.axes && pad.axes.length > 1) ? (pad.axes[1] || 0) : 0;
     const stickThreshold = 0.45;
 
+    if (Math.abs(axisX) > 0.2 || Math.abs(axisY) > 0.2) {
+      anyInputDetected = true;
+    }
+
     let dir = null;
     if (dpadLeft || axisX < -stickThreshold) dir = 'left';
     else if (dpadRight || axisX > stickThreshold) dir = 'right';
     else if (dpadUp || axisY < -stickThreshold) dir = 'up';
     else if (dpadDown || axisY > stickThreshold) dir = 'down';
+
+    // If any controller button or stick activity occurred, activate controller mode
+    if (anyInputDetected && !document.body.classList.contains('controller-active')) {
+      document.body.classList.add('controller-active');
+      if (!this.focusedEl) {
+        this.focusFirstAvailable();
+      }
+    }
 
     const now = timestamp || performance.now();
     if (dir) {

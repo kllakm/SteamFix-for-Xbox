@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.6.0-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.6.1-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-00A2FF.svg?style=flat-square)](#handheld-experience)
@@ -150,6 +150,22 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+
+### [v1.6.1] - 2026-10-14
+- **Centered Category Navigation Row (`LT` ... `RT`):**
+  - Horizontally centered the subnav strip (`Missing from Xbox`, `Synced`, `All Steam`, `Hidden`, `Xbox Library`) across the full width of the screen.
+- **Page Slide Alignment & Bounds Fix:**
+  - Fixed full-page transitions so `Backups` and `Settings` stay strictly within viewport bounds without sliding too far or clipping off-screen.
+  - Constrained CSS grid layouts with `minmax(0, 1fr)` tracks and `box-sizing: border-box` to prevent card overflow.
+- **Dynamic Controller-Only Hints:**
+  - Controller button prompts (`LB`, `RB`, `LT`, `RT`, and the docked footer HUD legend) now hide by default in desktop mode and ONLY display when a controller button or thumbstick is actively moved.
+  - Touching or moving the mouse (>25px) instantly restores clean desktop mode and hides all controller hints.
+- **Authentic Xbox Bumper & Trigger Badge Silhouettes:**
+  - Styled `[LB]` and `[RB]` badges with contoured outer shoulder curves matching actual controller bumpers.
+  - Styled `[LT]` and `[RT]` badges with authentic curved trigger silhouettes.
+- **Settings Layout & Vector Icon Badges:**
+  - Fixed "Add Custom Folder" header collision in Settings using dedicated flex spacing and vertical alignment.
+  - Modernized Controller & Handheld Navigation guide in Settings: replaced overflowing text badges with authentic concentric circle thumbstick icon, directional pad cross SVG, and individual bumper/trigger badges that fit cleanly without wrapping outside cards.
 
 ### [v1.6.0] - 2026-10-14
 - **Rigid 340px Card Minimum Dimensions & Responsive Artwork Scaling:**
