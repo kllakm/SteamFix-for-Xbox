@@ -1,8 +1,8 @@
-version: 1.5.1
+version: 1.6.0
 files:
   - url: XboxSteamBridge-Setup.exe
-    sha512: DKem984o4JORvc6c79OpXjCgNrif6E1G1pGLd+181iTo3bpnHLWsKbwdceDGCNGCk5A/PKvcDnu24h/UfA2V/w==
-    size: 100853887
+    sha512: CO5CfA+RJ+XH13422PtZkRzZiA9w/HiYrjGmSSnSbtuc1ssw8yQaGc7laQ+XHuDI0yzgdxZrcqsE2tFg/DjPhA==
+    size: 100851873
 path: XboxSteamBridge-Setup.exe
-sha512: DKem984o4JORvc6c79OpXjCgNrif6E1G1pGLd+181iTo3bpnHLWsKbwdceDGCNGCk5A/PKvcDnu24h/UfA2V/w==
-releaseDate: '2026-10-13T10:54:17.333Z'
+sha512: CO5CfA+RJ+XH13422PtZkRzZiA9w/HiYrjGmSSnSbtuc1ssw8yQaGc7laQ+XHuDI0yzgdxZrcqsE2tFg/DjPhA==
+releaseDate: '2026-10-14T02:07:54.648Z'

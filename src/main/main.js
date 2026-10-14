@@ -5,7 +5,7 @@ const packageJson = require('../../package.json');
 const { scanSteamLibraries } = require('./steamScanner');
 const { inspectXboxApp, deduplicateSteamGames, getXboxLocalStatePath } = require('./xboxInspector');
 const { checkXboxProcesses, closeXboxProcesses } = require('./processSafety');
-const { injectSteamGames, uninjectSteamGames, listBackups, restoreBackup } = require('./injector');
+const { injectSteamGames, uninjectSteamGames, listBackups, restoreBackup, createSafetyBackups } = require('./injector');
 const { createMockSteamLibrary } = require('./fixtureGenerator');
 
 // Configure Chromium command line switches for universal gamepad support
@@ -31,6 +31,7 @@ function createWindow() {
     backgroundColor: '#0a0e17',
     icon: iconPath,
     fullScreenable: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -38,6 +39,11 @@ function createWindow() {
       backgroundThrottling: false
     },
     autoHideMenuBar: true
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    mainWindow.focus();
   });
 
   mainWindow.on('enter-full-screen', () => {
@@ -170,6 +176,16 @@ ipcMain.handle('get-backups', async () => {
 ipcMain.handle('restore-backup', async (_event, backupPath) => {
   try {
     const result = restoreBackup(backupPath);
+    return { success: true, result };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('create-backup', async () => {
+  try {
+    const localState = getXboxLocalStatePath();
+    const result = createSafetyBackups(localState);
     return { success: true, result };
   } catch (error) {
     return { success: false, error: error.message };

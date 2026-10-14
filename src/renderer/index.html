@@ -8,190 +8,306 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="desktop-mode">
+  <!-- Dynamic Parallax Ambient Background Layers -->
+  <div class="ambient-bg-canvas" id="ambientBgCanvas">
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+  </div>
+
   <div class="console-app">
-    <!-- Tier 1: Console Topbar (Brand, Console Section Navigation with LB/RB, Status, and Controls) -->
+    <!-- Topbar: Clean, Centered Menu, Minimal Console Horizon -->
     <header class="console-topbar">
-      <div class="brand-group">
+      <!-- Left: Logo Only -->
+      <div class="brand-group" id="brandGroup" title="XboxSteamBridge">
         <img src="assets/logo-64.png" alt="Logo" class="console-logo" />
-        <div class="brand-titles">
-          <h1 class="console-title">XboxSteamBridge</h1>
-          <span class="console-badge" id="semverBadge">v1.5.1</span>
-        </div>
       </div>
 
-      <!-- Center Console Section Navigation (LB / RB Stepper) -->
+      <!-- Center: Main Section Navigation (Centered at all times, No pill borders) -->
       <nav class="console-section-nav" aria-label="Main Sections">
-        <span class="controller-badge badge-bumper" id="badgeLB" title="Controller Left Bumper (LB) / Q Key">LB</span>
-        <div class="section-nav-links">
+        <span class="controller-badge badge-bumper" id="badgeLB" title="Left Bumper (LB) / Q Key">LB</span>
+        <div class="section-nav-links" id="sectionNavLinks">
           <button class="section-nav-btn active" data-section="library" id="navBtnLibrary">
-            <span>Library</span>
-            <span class="nav-indicator-bar"></span>
+            <span class="nav-text">Library</span>
+            <span class="nav-glow-bar"></span>
           </button>
           <button class="section-nav-btn" data-section="sync" id="navBtnSync">
-            <span>Sync Center</span>
-            <span class="nav-indicator-bar"></span>
+            <span class="nav-text">Sync Center</span>
+            <span class="nav-glow-bar"></span>
           </button>
           <button class="section-nav-btn" data-section="backups" id="navBtnBackups">
-            <span>Backups</span>
-            <span class="nav-indicator-bar"></span>
+            <span class="nav-text">Backups</span>
+            <span class="nav-glow-bar"></span>
           </button>
           <button class="section-nav-btn" data-section="settings" id="navBtnSettings">
-            <span>Settings</span>
-            <span class="nav-indicator-bar"></span>
+            <span class="nav-text">Settings</span>
+            <span class="nav-glow-bar"></span>
           </button>
         </div>
-        <span class="controller-badge badge-bumper" id="badgeRB" title="Controller Right Bumper (RB) / E Key">RB</span>
+        <span class="controller-badge badge-bumper" id="badgeRB" title="Right Bumper (RB) / E Key">RB</span>
       </nav>
 
+      <!-- Right: Minimal Clean Icon Utilities -->
       <div class="topbar-right">
-        <!-- Process Status -->
-        <div class="status-indicator" id="processPill" title="Xbox App status">
-          <span class="status-dot" id="processDot"></span>
-          <span class="status-text" id="processLabel">Checking Xbox...</span>
-          <button class="btn-kill" id="btnKillXbox" style="display: none;">Close Xbox</button>
-        </div>
+        <!-- Unobtrusive Xbox App running indicator (Shown ONLY when Xbox App is active) -->
+        <button class="icon-utility-btn alert-running" id="btnXboxAlert" style="display: none;" title="Xbox App is currently running. Click for actions.">
+          <span class="alert-pulse-dot"></span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </button>
 
-        <!-- Controller Status -->
-        <div class="gamepad-status-pill" id="gamepadStatusPill" title="Gamepad navigation active">
-          <span class="gamepad-indicator-dot"></span>
-          <span class="gamepad-status-text" id="gamepadStatusText">Controller Ready</span>
-        </div>
+        <!-- Scan Button: Refresh Icon Only -->
+        <button class="icon-utility-btn" id="btnScan" title="Scan local Steam & Xbox libraries (Y Button)">
+          <svg class="btn-icon" id="scanIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
 
-        <!-- Quick Utilities -->
-        <div class="utility-actions">
-          <button class="console-btn btn-ghost" id="btnToggleFse" title="Toggle Full Screen Experience (FSE)">
-            <svg class="btn-icon" id="fseIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-            </svg>
-            <span id="fseBtnLabel">FSE</span>
-          </button>
-
-          <button class="console-btn btn-primary" id="btnScan" title="Scan local libraries (Y Button)">
-            <svg class="btn-icon spin-icon" id="scanIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-            </svg>
-            <span id="scanBtnText">Scan</span>
-          </button>
-        </div>
+        <!-- FSE Button: Expand / Contract Icon Only -->
+        <button class="icon-utility-btn" id="btnToggleFse" title="Toggle Full Screen Experience (☰ Button)">
+          <svg class="btn-icon" id="fseIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+        </button>
       </div>
     </header>
 
-    <!-- Tier 2: Sub-Navigation Category Strip (LT / RT Trigger Badges + Cyan Underline Pill) -->
-    <nav class="console-subnav-strip" aria-label="Library Categories">
-      <div class="subnav-container">
-        <span class="controller-badge badge-trigger" id="badgeLT" title="Left Trigger (LT)">LT</span>
-        <div class="console-tabs" id="categoryTabsContainer">
-          <button class="nav-tab tab-btn active" data-tab="missing" id="tabMissing">
-            <span class="tab-label">Missing from Xbox</span>
-            <span class="tab-count" id="badgeMissing">0</span>
-            <span class="tab-indicator-pill"></span>
-          </button>
-          <button class="nav-tab tab-btn" data-tab="synced" id="tabSynced">
-            <span class="tab-label">Synced</span>
-            <span class="tab-count" id="badgeSynced">0</span>
-            <span class="tab-indicator-pill"></span>
-          </button>
-          <button class="nav-tab tab-btn" data-tab="all" id="tabAll">
-            <span class="tab-label">All Steam</span>
-            <span class="tab-count" id="badgeAll">0</span>
-            <span class="tab-indicator-pill"></span>
-          </button>
-          <button class="nav-tab tab-btn" data-tab="hidden" id="tabHidden">
-            <span class="tab-label">Hidden</span>
-            <span class="tab-count" id="badgeHidden">0</span>
-            <span class="tab-indicator-pill"></span>
-          </button>
-          <button class="nav-tab tab-btn" data-tab="xbox" id="tabXbox">
-            <span class="tab-label">Xbox Library</span>
-            <span class="tab-count" id="badgeXbox">0</span>
-            <span class="tab-indicator-pill"></span>
-          </button>
-        </div>
-        <span class="controller-badge badge-trigger" id="badgeRT" title="Right Trigger (RT)">RT</span>
+    <!-- Console Viewport with Directional Slide Transitions -->
+    <main class="console-viewport">
+      <div class="console-pages-slider" id="pagesSlider">
+
+        <!-- ================= PAGE 1: LIBRARY ================= -->
+        <section class="console-page active" id="pageLibrary" data-page-index="0">
+          <!-- Category Tabs Strip (LT / RT Triggers) -->
+          <nav class="console-subnav-strip" aria-label="Library Categories">
+            <div class="subnav-container">
+              <span class="controller-badge badge-trigger" id="badgeLT" title="Left Trigger (LT)">LT</span>
+              <div class="console-tabs" id="categoryTabsContainer">
+                <button class="nav-tab tab-btn active" data-tab="missing" id="tabMissing">
+                  <span class="tab-label">Missing from Xbox</span>
+                  <span class="tab-count" id="badgeMissing">0</span>
+                  <span class="tab-indicator-pill"></span>
+                </button>
+                <button class="nav-tab tab-btn" data-tab="synced" id="tabSynced">
+                  <span class="tab-label">Synced</span>
+                  <span class="tab-count" id="badgeSynced">0</span>
+                  <span class="tab-indicator-pill"></span>
+                </button>
+                <button class="nav-tab tab-btn" data-tab="all" id="tabAll">
+                  <span class="tab-label">All Steam</span>
+                  <span class="tab-count" id="badgeAll">0</span>
+                  <span class="tab-indicator-pill"></span>
+                </button>
+                <button class="nav-tab tab-btn" data-tab="hidden" id="tabHidden">
+                  <span class="tab-label">Hidden</span>
+                  <span class="tab-count" id="badgeHidden">0</span>
+                  <span class="tab-indicator-pill"></span>
+                </button>
+                <button class="nav-tab tab-btn" data-tab="xbox" id="tabXbox">
+                  <span class="tab-label">Xbox Library</span>
+                  <span class="tab-count" id="badgeXbox">0</span>
+                  <span class="tab-indicator-pill"></span>
+                </button>
+              </div>
+              <span class="controller-badge badge-trigger" id="badgeRT" title="Right Trigger (RT)">RT</span>
+            </div>
+          </nav>
+
+          <!-- Action Bar: Title, Count, Search, Add Folder -->
+          <div class="console-action-bar">
+            <div class="action-bar-left">
+              <div class="section-headline">
+                <h2 class="section-title">My Games</h2>
+                <span class="section-separator">|</span>
+                <span class="section-subtitle" id="sectionSubtitle">Steam Bridge</span>
+                <span class="section-count" id="sectionCount">(0 games)</span>
+              </div>
+            </div>
+
+            <div class="action-bar-right">
+              <!-- Search Capsule -->
+              <div class="console-search">
+                <svg class="search-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search games..." />
+                <button class="search-clear" id="searchClearBtn" style="display: none;" title="Clear search">&times;</button>
+              </div>
+
+              <!-- Add Folder Button -->
+              <button class="console-btn btn-ghost" id="btnAddFolder" title="Add custom Steam library drive or folder">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  <line x1="12" y1="11" x2="12" y2="17"/>
+                  <line x1="9" y1="14" x2="15" y2="14"/>
+                </svg>
+                <span>Add Folder</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Rigid 340px Minimum Size Games Showcase Grid -->
+          <div class="games-showcase games-grid" id="gamesContainer">
+            <!-- Dynamically populated via app.js -->
+          </div>
+        </section>
+
+        <!-- ================= PAGE 2: SYNC CENTER ================= -->
+        <section class="console-page" id="pageSync" data-page-index="1">
+          <div class="sync-hub-hero">
+            <div class="sync-hero-left">
+              <div class="sync-hero-badge">Xbox Game Pass Bridge</div>
+              <h2 class="sync-hero-title">Sync Center</h2>
+              <p class="sync-hero-desc">Batch inject verified Steam titles and CDN box artwork directly into your PC Xbox App database.</p>
+            </div>
+
+            <div class="sync-hero-actions">
+              <div class="selection-pill" id="syncSelectionPill">
+                <label class="console-checkbox-label" id="selectAllTouchLabel">
+                  <input type="checkbox" id="selectAllCheckbox" checked>
+                  <span class="custom-checkbox"></span>
+                  <span id="selectLabel">Select All (0)</span>
+                </label>
+                <span class="selection-divider">•</span>
+                <span class="selection-note" id="selectionSummary">0 titles selected</span>
+              </div>
+
+              <button class="console-btn btn-cta btn-lg" id="btnSync" disabled title="Inject selected titles into Xbox App (X Button)">
+                <svg class="btn-icon-cta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                <span id="syncBtnLabel">Sync Selected to Xbox</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sync Target Showcase Grid -->
+          <div class="games-showcase games-grid" id="syncGamesContainer">
+            <!-- Filtered missing games rendered here -->
+          </div>
+        </section>
+
+        <!-- ================= PAGE 3: BACKUPS & RESTORE ================= -->
+        <section class="console-page" id="pageBackups" data-page-index="2">
+          <div class="page-header-row">
+            <div>
+              <div class="page-category-badge">State Management</div>
+              <h2 class="page-header-title">Safety Backups & Snapshots</h2>
+              <p class="page-header-desc">Timestamped safety snapshots created before manifest injections. Restore or roll back with a single click.</p>
+            </div>
+            <button class="console-btn btn-ghost" id="btnCreateBackup" title="Create a manual safety backup snapshot">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <span>Create Snapshot Now</span>
+            </button>
+          </div>
+
+          <div class="backups-page-card">
+            <div class="backups-list" id="backupsList">
+              <div class="empty-backups">No previous backups found in Xbox LocalState.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= PAGE 4: SETTINGS & LIBRARIES ================= -->
+        <section class="console-page" id="pageSettings" data-page-index="3">
+          <div class="page-header-row">
+            <div>
+              <div class="page-category-badge">Preferences & Config</div>
+              <h2 class="page-header-title">Settings & Steam Libraries</h2>
+              <p class="page-header-desc">Manage local Steam drive roots, hidden game exclusions, and Xbox integration directories.</p>
+            </div>
+          </div>
+
+          <div class="settings-grid-layout">
+            <!-- Discovered Folders -->
+            <div class="settings-card">
+              <div class="settings-section-header">
+                <div>
+                  <h3 class="settings-card-title">Discovered Steam Folders</h3>
+                  <p class="settings-card-subtitle">Local storage drives containing Steam libraries.</p>
+                </div>
+                <button class="console-btn btn-ghost btn-sm" id="btnSettingsAddFolder">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  <span>Add Custom Folder</span>
+                </button>
+              </div>
+              <div class="libraries-list-container" id="settingsLibrariesList">
+                <div class="empty-backups">No library folders discovered yet. Click Scan to detect.</div>
+              </div>
+            </div>
+
+            <!-- Library Preferences -->
+            <div class="settings-card">
+              <h3 class="settings-card-title">Integration & Preferences</h3>
+              <p class="settings-card-subtitle">Manage hidden titles and LocalState path.</p>
+
+              <div class="settings-action-row">
+                <div class="settings-row-info">
+                  <strong>Reset Hidden Titles</strong>
+                  <p>Unhide all games previously dismissed from injection suggestions.</p>
+                </div>
+                <button class="console-btn btn-ghost btn-sm" id="btnResetHidden">Reset Hidden (<span id="settingsHiddenCount">0</span>)</button>
+              </div>
+
+              <div class="settings-action-row">
+                <div class="settings-row-info">
+                  <strong>Xbox LocalState Directory</strong>
+                  <p id="settingsXboxPath">Scanning package state...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controller Navigation Legend -->
+            <div class="settings-card settings-card-wide">
+              <h3 class="settings-card-title">Controller & Handheld Navigation</h3>
+              <p class="settings-card-subtitle">Universal gamepad mapping for Xbox Wireless, ROG Ally, Legion Go, and XInput controllers.</p>
+              <div class="controls-guide-grid">
+                <div class="guide-item"><span class="btn-badge btn-a">A</span> <span class="guide-text">Select / Toggle Card / Confirm</span></div>
+                <div class="guide-item"><span class="btn-badge btn-b">B</span> <span class="guide-text">Back / Cancel Dialog</span></div>
+                <div class="guide-item"><span class="btn-badge btn-x">X</span> <span class="guide-text">Quick Toggle Select All</span></div>
+                <div class="guide-item"><span class="btn-badge btn-y">Y</span> <span class="guide-text">Scan Libraries Now</span></div>
+                <div class="guide-item"><span class="btn-badge btn-bumper">LB / RB</span> <span class="guide-text">Switch Top Pages (Library, Sync, Backups, Settings)</span></div>
+                <div class="guide-item"><span class="btn-badge btn-trigger">LT / RT</span> <span class="guide-text">Switch Library Category Tabs</span></div>
+                <div class="guide-item"><span class="btn-badge btn-menu">☰</span> <span class="guide-text">Toggle Full Screen Experience (FSE)</span></div>
+                <div class="guide-item"><span class="btn-badge btn-dpad">D-Pad / Stick</span> <span class="guide-text">2D Spatial Card & UI Focus Navigation</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
-    </nav>
-
-    <!-- Main Workspace (Spacious Console View) -->
-    <main class="console-main">
-      <!-- Section Header Strip (Console Title, Search, and Action Bar) -->
-      <section class="console-action-bar">
-        <div class="action-bar-left">
-          <div class="section-headline">
-            <h2 class="section-title">My Games</h2>
-            <span class="section-separator">|</span>
-            <span class="section-subtitle" id="sectionSubtitle">Steam Bridge</span>
-            <span class="section-count" id="sectionCount">(0 games)</span>
-          </div>
-
-          <div class="selection-pill" id="selectionBanner">
-            <label class="console-checkbox-label" id="selectAllTouchLabel">
-              <input type="checkbox" id="selectAllCheckbox" checked>
-              <span class="custom-checkbox"></span>
-              <span id="selectLabel">Select All (0)</span>
-            </label>
-            <span class="selection-divider">•</span>
-            <span class="selection-note" id="selectionSummary">0 titles selected</span>
-          </div>
-        </div>
-
-        <div class="action-bar-right">
-          <!-- Quick Search Capsule -->
-          <div class="console-search">
-            <svg class="search-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input type="text" id="searchInput" placeholder="Search games or AppID..." />
-            <button class="search-clear" id="searchClearBtn" style="display: none;" title="Clear search">&times;</button>
-          </div>
-
-          <!-- Secondary Actions -->
-          <button class="console-btn btn-ghost" id="btnAddFolder" title="Add custom Steam library drive or folder">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              <line x1="12" y1="11" x2="12" y2="17"/>
-              <line x1="9" y1="14" x2="15" y2="14"/>
-            </svg>
-            <span>Add Folder</span>
-          </button>
-
-          <!-- Primary Hero Console Action -->
-          <button class="console-btn btn-cta" id="btnSync" disabled title="Inject selected titles into Xbox App (X Button)">
-            <svg class="btn-icon-cta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-            <span id="syncBtnLabel">Sync to Xbox App</span>
-          </button>
-        </div>
-      </section>
-
-      <!-- Games Library Showcase Grid -->
-      <section class="games-showcase" id="gamesContainer">
-        <!-- Rendered via JS -->
-      </section>
     </main>
 
-    <!-- Docked Console Footer (Base HUD Bar with Gamepad Legend) -->
+    <!-- Docked Console Footer (Base HUD with Controller Legend) -->
     <footer class="console-footer">
       <div class="footer-status-pane">
         <span class="footer-dot-live"></span>
         <span class="status-item" id="footerSteamStatus">Steam Library Connected</span>
         <span class="footer-separator">•</span>
         <span class="status-item" id="footerXboxStatus">Xbox LocalState Ready</span>
-        <span class="footer-separator">•</span>
-        <span class="version-label" id="footerVersionBadge">v1.5.1</span>
       </div>
 
-      <!-- Console Gamepad HUD Action Legend (Visible when Controller Active) -->
+      <!-- Controller Legend (Always Clean & Visible) -->
       <div class="footer-controller-legend" id="footerControllerLegend">
         <span class="hud-item"><span class="btn-badge btn-a">A</span> Select</span>
         <span class="hud-item"><span class="btn-badge btn-b">B</span> Back</span>
         <span class="hud-item"><span class="btn-badge btn-x">X</span> Toggle All</span>
         <span class="hud-item"><span class="btn-badge btn-y">Y</span> Scan</span>
-        <span class="hud-item"><span class="btn-badge btn-bumper">LB / RB</span> Section</span>
+        <span class="hud-item"><span class="btn-badge btn-bumper">LB / RB</span> Page</span>
         <span class="hud-item"><span class="btn-badge btn-trigger">LT / RT</span> Category</span>
         <span class="hud-item"><span class="btn-badge btn-menu">☰</span> FSE</span>
       </div>
@@ -201,12 +317,12 @@
     <div id="consoleLogs" style="display: none;"></div>
   </div>
 
-  <!-- Modal: Confirmation Dialog -->
+  <!-- Modal: Confirmation Dialog for Sync -->
   <div class="modal-backdrop" id="confirmModal" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-icon-badge">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00E575" stroke-width="2.5">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E575" stroke-width="2.5">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
         </div>
@@ -219,7 +335,7 @@
       <div class="modal-body">
         <p class="modal-text">You are about to inject <strong id="modalGameCount">0</strong> Steam games into your modern Xbox App local library.</p>
         <div class="safety-box">
-          <svg class="safety-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#00E575" stroke-width="2">
+          <svg class="safety-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#00E575" stroke-width="2">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
             <polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
@@ -244,13 +360,13 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-icon-badge modal-badge-warn">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#ef4444" stroke-width="2.5">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2.5">
             <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
           </svg>
         </div>
         <div class="modal-title-group">
           <h2 class="modal-title">Uninject from Xbox App</h2>
-          <span class="modal-subtitle">Safely remove title from PC Xbox App library and manifests</span>
+          <span class="modal-subtitle">Safely remove title from PC Xbox App library</span>
         </div>
         <button class="modal-close" id="btnCloseUninject">&times;</button>
       </div>
@@ -272,85 +388,32 @@
     </div>
   </div>
 
-  <!-- Modal: Backups & Rollback Manager -->
-  <div class="modal-backdrop" id="backupsModal" style="display: none;">
-    <div class="modal-card modal-lg">
+  <!-- Modal: Xbox Running Notification Dialog -->
+  <div class="modal-backdrop" id="xboxRunningModal" style="display: none;">
+    <div class="modal-card">
       <div class="modal-header">
-        <div class="modal-icon-badge">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#1A9FFF" stroke-width="2.5">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-            <path d="M3 3v5h5"/>
+        <div class="modal-icon-badge modal-badge-warn">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="2.5">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
         </div>
         <div class="modal-title-group">
-          <h2 class="modal-title">Safety Backups & Snapshots</h2>
-          <span class="modal-subtitle">Restore previous Xbox library snapshots at any time</span>
+          <h2 class="modal-title">Xbox App is Running</h2>
+          <span class="modal-subtitle">File lock notification</span>
         </div>
-        <button class="modal-close" id="btnCloseBackups">&times;</button>
+        <button class="modal-close" id="btnCloseXboxRunning">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="backups-list" id="backupsList">
-          <div class="empty-backups">No previous backups found in Xbox LocalState.</div>
+        <p class="modal-text">The Xbox PC App is currently active in the background. Injections and manifest changes require the Xbox App to be closed so that files are unlocked and refreshed upon restart.</p>
+        <div class="warning-box">
+          <p id="xboxProcessesSummary">Active process: XboxPcApp.exe</p>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="console-btn btn-ghost" id="btnCloseBackupsFooter">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Settings & Library Folders Manager (Console Settings Style) -->
-  <div class="modal-backdrop" id="settingsModal" style="display: none;">
-    <div class="modal-card modal-lg">
-      <div class="modal-header">
-        <div class="modal-icon-badge">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00a2ff" stroke-width="2.2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </div>
-        <div class="modal-title-group">
-          <h2 class="modal-title">Settings & Steam Libraries</h2>
-          <span class="modal-subtitle">Manage Steam install directories and Xbox App integration</span>
-        </div>
-        <button class="modal-close" id="btnCloseSettings">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="settings-section">
-          <div class="settings-section-header">
-            <h3>Discovered Steam Folders</h3>
-            <button class="console-btn btn-ghost btn-sm" id="btnSettingsAddFolder">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span>Add Custom Folder</span>
-            </button>
-          </div>
-          <div class="libraries-list-container" id="settingsLibrariesList">
-            <div class="empty-backups">No library folders discovered yet. Click Scan to detect.</div>
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <h3>Integration & Preferences</h3>
-          <div class="settings-row">
-            <div>
-              <strong>Reset Hidden Titles</strong>
-              <p>Unhide all games previously dismissed from injection suggestions.</p>
-            </div>
-            <button class="console-btn btn-ghost btn-sm" id="btnResetHidden">Reset Hidden (<span id="settingsHiddenCount">0</span>)</button>
-          </div>
-          <div class="settings-row">
-            <div>
-              <strong>Xbox LocalState Directory</strong>
-              <p id="settingsXboxPath">Scanning package state...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="console-btn btn-ghost" id="btnCloseSettingsFooter">Close</button>
+        <button class="console-btn btn-ghost" id="btnDismissXboxRunning">Dismiss</button>
+        <button class="console-btn btn-danger" id="btnKillXboxModal">Close Xbox App</button>
       </div>
     </div>
   </div>
@@ -358,4 +421,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-

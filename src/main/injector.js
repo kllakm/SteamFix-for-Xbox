@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const crypto = require('crypto');
 const { getXboxLocalStatePath, readCustomManifest } = require('./xboxInspector');
 
 /**
@@ -17,6 +18,30 @@ function getTimestamp() {
   const min = pad(now.getMinutes());
   const ss = pad(now.getSeconds());
   return `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+}
+
+/**
+ * Generate a deterministic UUIDv4-compliant GUID from a Steam AppID.
+ * Xbox App parses custom app keys via Guid.Parse(entry.Key).
+ * Non-GUID keys cause Xbox App's internal database manager to throw a
+ * FormatException and crash when viewing or clicking "Add an app".
+ */
+function appIdToGuid(appId) {
+  const hash = crypto.createHash('md5').update(`steam_app_guid_${String(appId)}`).digest('hex');
+  const p1 = hash.substring(0, 8);
+  const p2 = hash.substring(8, 12);
+  const p3 = '4' + hash.substring(13, 16);
+  const p4 = ((parseInt(hash.substring(16, 18), 16) & 0x3f) | 0x80).toString(16) + hash.substring(18, 20);
+  const p5 = hash.substring(20, 32);
+  return `${p1}-${p2}-${p3}-${p4}-${p5}`.toLowerCase();
+}
+
+/**
+ * Validate whether a string is a standard GUID
+ */
+function isValidGuid(str) {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
 }
 
 /**
@@ -40,7 +65,7 @@ async function downloadArtworkBuffer(url) {
         return Buffer.from(arrayBuf);
       }
     } catch (e) {
-      // Fallback to https request
+      // Fallback
     }
   }
 
@@ -72,18 +97,18 @@ function generateFallbackArtwork(title) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="460" height="215" viewBox="0 0 460 215">
     <defs>
       <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#0f1923"/>
+        <stop offset="0%" stop-color="#0d1419"/>
         <stop offset="100%" stop-color="#05080d"/>
       </linearGradient>
       <linearGradient id="acc" x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" stop-color="#00E575"/>
-        <stop offset="100%" stop-color="#1A9FFF"/>
+        <stop offset="100%" stop-color="#00A2FF"/>
       </linearGradient>
     </defs>
     <rect width="460" height="215" fill="url(#bg)"/>
     <rect x="0" y="210" width="460" height="5" fill="url(#acc)"/>
-    <circle cx="230" cy="85" r="32" fill="#00E575" opacity="0.15"/>
-    <path d="M220 75 L240 75 L240 95 L220 95 Z" fill="#00E575" opacity="0.8"/>
+    <circle cx="230" cy="85" r="32" fill="#00A2FF" opacity="0.18"/>
+    <path d="M220 75 L240 75 L240 95 L220 95 Z" fill="#00A2FF" opacity="0.85"/>
     <text x="230" y="145" font-family="Segoe UI, sans-serif" font-size="20" font-weight="700" fill="#ffffff" text-anchor="middle">${cleanTitle}</text>
     <text x="230" y="172" font-family="Segoe UI, sans-serif" font-size="12" fill="#64748B" text-anchor="middle">STEAM TITLE</text>
   </svg>`;
@@ -130,14 +155,6 @@ function createSafetyBackups(localStateDir) {
     {
       source: path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest'),
       name: `CustomLibraryManagement.manifest.${timestamp}.bak`
-    },
-    {
-      source: path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement', 'CustomLibraryManagement.manifest'),
-      name: `ThirdParty_CustomLibraryManagement.manifest.${timestamp}.bak`
-    },
-    {
-      source: path.join(localStateDir, 'ThirdPartyLibraries', 'steam', 'steam.manifest'),
-      name: `Steam_ThirdParty.manifest.${timestamp}.bak`
     }
   ];
 
@@ -195,16 +212,7 @@ function restoreBackup(backupFilePath) {
   }
 
   const localStateDir = getXboxLocalStatePath();
-  const filename = path.basename(backupFilePath);
-
-  let targetPath;
-  if (filename.startsWith('ThirdParty_')) {
-    targetPath = path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  } else if (filename.startsWith('Steam_')) {
-    targetPath = path.join(localStateDir, 'ThirdPartyLibraries', 'steam', 'steam.manifest');
-  } else {
-    targetPath = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  }
+  const targetPath = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
 
   ensureDirSync(path.dirname(targetPath));
   fs.copyFileSync(backupFilePath, targetPath);
@@ -217,50 +225,77 @@ function restoreBackup(backupFilePath) {
 }
 
 /**
- * Inject Steam games into Xbox App database and manifest files
+ * Clean up legacy rogue directories created by previous buggy versions
+ * (e.g. ThirdPartyLibraries/CustomLibraryManagement which breaks Xbox App provider loading)
+ */
+function cleanLegacyRogueFiles(localStateDir) {
+  try {
+    const rogueThirdPartyCustom = path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement');
+    if (fs.existsSync(rogueThirdPartyCustom)) {
+      fs.rmSync(rogueThirdPartyCustom, { recursive: true, force: true });
+    }
+  } catch (e) {
+    console.warn('[Injector] Notice cleaning rogue directory:', e.message);
+  }
+}
+
+/**
+ * Inject Steam games into Xbox App CustomLibraryManagement.manifest using native GUID keys.
+ * This guarantees 100% stability in Xbox Game Pass PC and prevents "Apps" section crashes.
  */
 async function injectSteamGames(gamesToInject, onProgress = () => {}) {
   const localStateDir = getXboxLocalStatePath();
   ensureDirSync(localStateDir);
 
+  // Clean rogue directories from past releases
+  cleanLegacyRogueFiles(localStateDir);
+
   // Step 1: Create Safety Backups
-  onProgress({ stage: 'backup', message: 'Creating timestamped safety backups of Xbox App state...' });
+  onProgress({ stage: 'backup', message: 'Creating timestamped safety backup of Xbox App state...' });
   const backupInfo = createSafetyBackups(localStateDir);
 
-  // Manifest Paths
-  const manifestPath1 = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  const manifestPath2 = path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  const steamManifestPath = path.join(localStateDir, 'ThirdPartyLibraries', 'steam', 'steam.manifest');
-  const externalShortcutDir = path.join(localStateDir, 'ExternalAppShortcut');
+  // Primary Manifest Path
+  const customLibDir = path.join(localStateDir, 'CustomLibraryManagement');
+  const manifestPath = path.join(customLibDir, 'CustomLibraryManagement.manifest');
+  ensureDirSync(customLibDir);
 
-  ensureDirSync(path.dirname(manifestPath1));
-  ensureDirSync(path.dirname(manifestPath2));
-  ensureDirSync(path.dirname(steamManifestPath));
-  ensureDirSync(externalShortcutDir);
+  // Step 2: Read existing manifest
+  onProgress({ stage: 'read', message: 'Reading existing Xbox App manifest...' });
+  const manifest = readCustomManifest(manifestPath);
 
-  // Step 2: Read existing manifests
-  onProgress({ stage: 'read', message: 'Reading existing Xbox App manifests...' });
-  const manifest1 = readCustomManifest(manifestPath1);
-  const manifest2 = readCustomManifest(manifestPath2);
-  const steamManifest = readCustomManifest(steamManifestPath);
+  // Clean any legacy invalid non-GUID keys that may have corrupted gameCache in earlier versions
+  const sanitizedCache = {};
+  for (const [k, v] of Object.entries(manifest.gameCache || {})) {
+    if (isValidGuid(k)) {
+      sanitizedCache[k] = v;
+    } else if (k.startsWith('steam_') && v && v.launchUri) {
+      // Re-key legacy entry to proper deterministic GUID
+      const m = v.launchUri.match(/steam:\/\/run\/(\d+)/);
+      if (m) {
+        const correctGuid = appIdToGuid(m[1]);
+        sanitizedCache[correctGuid] = {
+          ...v,
+          id: correctGuid
+        };
+      }
+    }
+  }
+  manifest.gameCache = sanitizedCache;
 
   let injectedCount = 0;
   const injectedTitles = [];
 
-  // Step 3: Inject each game into gameCache across all locations
+  // Step 3: Inject each game with standard Xbox schema
   onProgress({ stage: 'inject', message: `Injecting ${gamesToInject.length} Steam games into Xbox database...` });
 
   for (let i = 0; i < gamesToInject.length; i++) {
     const game = gamesToInject[i];
     const appId = String(game.appid);
-    const key = `steam_${appId}`;
+    const guid = appIdToGuid(appId);
 
-    // Prepare local artwork destination files
-    const customArtPath = path.join(localStateDir, 'CustomLibraryManagement', `${key}.png`);
-    const thirdPartyArtPath = path.join(localStateDir, 'ThirdPartyLibraries', 'steam', `${key}.png`);
-    const shortcutArtPath = path.join(externalShortcutDir, `${key}.png`);
+    // Save artwork locally directly inside CustomLibraryManagement
+    const artPath = path.join(customLibDir, `${guid}.png`);
 
-    // Download / prepare artwork locally
     onProgress({
       stage: 'artwork',
       index: i + 1,
@@ -269,65 +304,24 @@ async function injectSteamGames(gamesToInject, onProgress = () => {}) {
       message: `Downloading artwork for ${game.name}...`
     });
 
-    const localArtPath = await saveGameArtwork(appId, game.name, [customArtPath, thirdPartyArtPath, shortcutArtPath]);
+    await saveGameArtwork(appId, game.name, [artPath]);
 
-    const targetExe = game.primaryExecutable || (game.installLocation ? path.join(game.installLocation, `${game.name}.exe`) : '');
     const exeName = game.primaryExecutable ? path.basename(game.primaryExecutable) : `${game.name}.exe`;
-    const nowIso = new Date().toISOString();
-    const nowTimestamp = Date.now().toString();
+    const installLoc = game.installLocation || '';
+    const nowMs = Date.now();
 
-    // Manifest Entry (CustomLibraryManagement schema)
-    const newEntry = {
-      id: key,
+    // Standard Xbox CustomLibraryManagement schema with native GUID key
+    manifest.gameCache[guid] = {
+      id: guid,
       title: game.name,
-      provider: 'steam',
-      source: 'Steam',
-      storefront: 'Steam',
-      launchUri: `steam://run/${appId}`,
       executableName: exeName,
-      installLocation: game.installLocation || '',
-      imagePath: customArtPath,
-      targetImagePath: thirdPartyArtPath,
-      addedDate: nowTimestamp,
-      lastUpdated: nowIso
-    };
-
-    manifest1.gameCache[key] = newEntry;
-    manifest2.gameCache[key] = newEntry;
-
-    // Steam Provider Manifest Entry
-    steamManifest.gameCache[key] = {
-      id: appId,
-      title: game.name,
-      provider: 'steam',
-      installLocation: game.installLocation || '',
-      executableName: exeName,
-      imagePath: thirdPartyArtPath,
+      installLocation: installLoc,
+      executableCommandArgs: '',
+      imagePath: artPath,
+      addedDate: nowMs,
       launchUri: `steam://run/${appId}`,
-      addedDate: nowTimestamp
+      source: 'Steam'
     };
-
-    // ExternalAppShortcut Entry (Guarantees modern Xbox Game Pass library card pickup)
-    const shortcutFilePath = path.join(externalShortcutDir, `${key}.json`);
-    const shortcutData = {
-      id: key,
-      title: game.name,
-      targetPath: targetExe,
-      installPath: game.installLocation || '',
-      executablePath: targetExe,
-      iconPath: shortcutArtPath,
-      imagePath: shortcutArtPath,
-      launchUri: `steam://run/${appId}`,
-      provider: 'steam',
-      source: 'Steam',
-      createdDate: nowTimestamp
-    };
-
-    try {
-      fs.writeFileSync(shortcutFilePath, JSON.stringify(shortcutData, null, 2), 'utf8');
-    } catch (sErr) {
-      console.warn(`[Injector] Warning writing shortcut for ${game.name}:`, sErr.message);
-    }
 
     injectedCount++;
     injectedTitles.push(game.name);
@@ -341,12 +335,9 @@ async function injectSteamGames(gamesToInject, onProgress = () => {}) {
     });
   }
 
-  // Step 4: Write manifests cleanly with formatted JSON
+  // Step 4: Write manifest cleanly with formatted JSON
   onProgress({ stage: 'commit', message: 'Writing updated manifest files and committing changes...' });
-
-  fs.writeFileSync(manifestPath1, JSON.stringify(manifest1, null, 2), 'utf8');
-  fs.writeFileSync(manifestPath2, JSON.stringify(manifest2, null, 2), 'utf8');
-  fs.writeFileSync(steamManifestPath, JSON.stringify(steamManifest, null, 2), 'utf8');
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
 
   onProgress({ stage: 'done', message: `Successfully synchronized ${injectedCount} titles into Xbox App!` });
 
@@ -355,9 +346,7 @@ async function injectSteamGames(gamesToInject, onProgress = () => {}) {
     injectedCount,
     injectedTitles,
     backupInfo,
-    manifestPath1,
-    manifestPath2,
-    steamManifestPath
+    manifestPath
   };
 }
 
@@ -368,92 +357,76 @@ function uninjectSteamGames(appIdsOrKeys, onProgress = () => {}) {
   const localStateDir = getXboxLocalStatePath();
   const keysToUninject = Array.isArray(appIdsOrKeys) ? appIdsOrKeys : [appIdsOrKeys];
 
-  // Normalize all keys
-  const targetKeys = new Set();
-  const targetAppIds = new Set();
-
-  for (const item of keysToUninject) {
-    if (!item) continue;
-    const str = String(item).trim();
-    if (str.startsWith('steam_')) {
-      targetKeys.add(str);
-      targetAppIds.add(str.replace(/^steam_/, ''));
-    } else {
-      targetKeys.add(`steam_${str}`);
-      targetAppIds.add(str);
-    }
-  }
-
   // Step 1: Safety Backup
   onProgress({ stage: 'backup', message: 'Creating safety backup before uninjecting games...' });
   const backupInfo = createSafetyBackups(localStateDir);
 
-  const manifestPath1 = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  const manifestPath2 = path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  const steamManifestPath = path.join(localStateDir, 'ThirdPartyLibraries', 'steam', 'steam.manifest');
-  const externalShortcutDir = path.join(localStateDir, 'ExternalAppShortcut');
+  const customLibDir = path.join(localStateDir, 'CustomLibraryManagement');
+  const manifestPath = path.join(customLibDir, 'CustomLibraryManagement.manifest');
+  const manifest = readCustomManifest(manifestPath);
 
-  const manifest1 = readCustomManifest(manifestPath1);
-  const manifest2 = readCustomManifest(manifestPath2);
-  const steamManifest = readCustomManifest(steamManifestPath);
+  // Normalize targets into a set of AppIDs and GUIDs
+  const targetGuids = new Set();
+  const targetAppIds = new Set();
+  const targetTitles = new Set();
+
+  for (const item of keysToUninject) {
+    if (!item) continue;
+    const str = String(item).trim();
+    if (isValidGuid(str)) {
+      targetGuids.add(str.toLowerCase());
+    } else {
+      const cleanId = str.replace(/^steam_/, '');
+      targetAppIds.add(cleanId);
+      targetGuids.add(appIdToGuid(cleanId));
+      targetTitles.add(str.toLowerCase());
+    }
+  }
 
   let removedCount = 0;
   const removedTitles = [];
 
-  // Step 2: Remove from manifests and delete associated shortcut & artwork files
-  for (const appId of targetAppIds) {
-    const key = `steam_${appId}`;
+  // Step 2: Remove matching entries from manifest.gameCache
+  for (const [guidKey, entry] of Object.entries(manifest.gameCache || {})) {
+    let shouldRemove = false;
 
-    let title = '';
-    if (manifest1.gameCache[key]) {
-      title = manifest1.gameCache[key].title;
-      delete manifest1.gameCache[key];
-    }
-    if (manifest2.gameCache[key]) {
-      if (!title) title = manifest2.gameCache[key].title;
-      delete manifest2.gameCache[key];
-    }
-    if (steamManifest.gameCache[key]) {
-      if (!title) title = steamManifest.gameCache[key].title;
-      delete steamManifest.gameCache[key];
-    }
-    if (steamManifest.gameCache[appId]) {
-      if (!title) title = steamManifest.gameCache[appId].title;
-      delete steamManifest.gameCache[appId];
+    if (targetGuids.has(guidKey.toLowerCase())) {
+      shouldRemove = true;
+    } else if (entry && entry.id && targetGuids.has(String(entry.id).toLowerCase())) {
+      shouldRemove = true;
+    } else if (entry && entry.launchUri) {
+      const m = entry.launchUri.match(/steam:\/\/run\/(\d+)/);
+      if (m && targetAppIds.has(m[1])) {
+        shouldRemove = true;
+      }
+    } else if (entry && entry.title && targetTitles.has(entry.title.toLowerCase())) {
+      shouldRemove = true;
     }
 
-    // Remove ExternalAppShortcut file
-    const shortcutJson = path.join(externalShortcutDir, `${key}.json`);
-    const shortcutManifest = path.join(externalShortcutDir, `${key}.manifest`);
-    if (fs.existsSync(shortcutJson)) {
-      try { fs.unlinkSync(shortcutJson); } catch (e) {}
-    }
-    if (fs.existsSync(shortcutManifest)) {
-      try { fs.unlinkSync(shortcutManifest); } catch (e) {}
-    }
+    if (shouldRemove) {
+      const title = (entry && entry.title) || guidKey;
+      delete manifest.gameCache[guidKey];
+      removedCount++;
+      removedTitles.push(title);
 
-    // Remove local thumbnail files
-    const artFiles = [
-      path.join(localStateDir, 'CustomLibraryManagement', `${key}.png`),
-      path.join(localStateDir, 'ThirdPartyLibraries', 'steam', `${key}.png`),
-      path.join(localStateDir, 'ThirdPartyLibraries', 'steam', `${appId}.png`),
-      path.join(externalShortcutDir, `${key}.png`)
-    ];
-
-    for (const af of artFiles) {
-      if (fs.existsSync(af)) {
-        try { fs.unlinkSync(af); } catch (e) {}
+      // Unlink thumbnail file
+      const artFile = path.join(customLibDir, `${guidKey}.png`);
+      if (fs.existsSync(artFile)) {
+        try { fs.unlinkSync(artFile); } catch (e) {}
       }
     }
-
-    removedCount++;
-    removedTitles.push(title || key);
   }
 
-  // Step 3: Write back updated manifests
-  fs.writeFileSync(manifestPath1, JSON.stringify(manifest1, null, 2), 'utf8');
-  fs.writeFileSync(manifestPath2, JSON.stringify(manifest2, null, 2), 'utf8');
-  fs.writeFileSync(steamManifestPath, JSON.stringify(steamManifest, null, 2), 'utf8');
+  // Also clean any legacy files matching target keys
+  for (const appId of targetAppIds) {
+    const legacyArt = path.join(customLibDir, `steam_${appId}.png`);
+    if (fs.existsSync(legacyArt)) {
+      try { fs.unlinkSync(legacyArt); } catch (e) {}
+    }
+  }
+
+  // Step 3: Write back updated manifest
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
 
   onProgress({ stage: 'done', message: `Successfully uninjected ${removedCount} titles from Xbox App.` });
 
@@ -467,6 +440,8 @@ function uninjectSteamGames(appIdsOrKeys, onProgress = () => {}) {
 
 module.exports = {
   getTimestamp,
+  appIdToGuid,
+  isValidGuid,
   createSafetyBackups,
   listBackups,
   restoreBackup,

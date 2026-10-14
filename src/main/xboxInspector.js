@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 /**
  * Standard path to Xbox App LocalState directory
@@ -7,6 +8,19 @@ const path = require('path');
 function getXboxLocalStatePath() {
   const localAppData = process.env.LOCALAPPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Local');
   return path.join(localAppData, 'Packages', 'Microsoft.GamingApp_8wekyb3d8bbwe', 'LocalState');
+}
+
+/**
+ * Generate a deterministic UUIDv4-compliant GUID from a Steam AppID
+ */
+function appIdToGuid(appId) {
+  const hash = crypto.createHash('md5').update(`steam_app_guid_${String(appId)}`).digest('hex');
+  const p1 = hash.substring(0, 8);
+  const p2 = hash.substring(8, 12);
+  const p3 = '4' + hash.substring(13, 16);
+  const p4 = ((parseInt(hash.substring(16, 18), 16) & 0x3f) | 0x80).toString(16) + hash.substring(18, 20);
+  const p5 = hash.substring(20, 32);
+  return `${p1}-${p2}-${p3}-${p4}-${p5}`.toLowerCase();
 }
 
 /**
@@ -60,11 +74,8 @@ function inspectXboxApp() {
   const localStateDir = getXboxLocalStatePath();
   const exists = fs.existsSync(localStateDir);
 
-  const manifestPath1 = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-  const manifestPath2 = path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
-
-  const manifest1 = readCustomManifest(manifestPath1);
-  const manifest2 = readCustomManifest(manifestPath2);
+  const manifestPath = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
+  const manifest = readCustomManifest(manifestPath);
 
   const existingEntries = new Map();
 
@@ -77,24 +88,20 @@ function inspectXboxApp() {
     }
   };
 
-  // 1. Process CustomLibraryManagement manifests
-  const processCustomManifest = (manifest, sourceName) => {
-    if (manifest && manifest.gameCache) {
-      for (const [key, entry] of Object.entries(manifest.gameCache)) {
-        if (!entry || typeof entry !== 'object') continue;
-        registerEntry(key, {
-          ...entry,
-          id: entry.id || key,
-          sourceFile: sourceName,
-          sourceType: 'custom_manifest',
-          isCustom: true
-        });
-      }
+  // 1. Process CustomLibraryManagement manifest
+  if (manifest && manifest.gameCache) {
+    for (const [key, entry] of Object.entries(manifest.gameCache)) {
+      if (!entry || typeof entry !== 'object') continue;
+      registerEntry(key, {
+        ...entry,
+        id: entry.id || key,
+        originalId: key,
+        sourceFile: 'CustomLibraryManagement.manifest',
+        sourceType: 'custom_manifest',
+        isCustom: true
+      });
     }
-  };
-
-  processCustomManifest(manifest1, 'CustomLibraryManagement.manifest');
-  processCustomManifest(manifest2, 'ThirdPartyLibraries/CustomLibraryManagement');
+  }
 
   // 2. Scan Xbox ThirdPartyLibraries provider directories (steam, epic, gog, bnet, ea, ubi)
   const thirdPartyDir = path.join(localStateDir, 'ThirdPartyLibraries');
@@ -178,42 +185,10 @@ function inspectXboxApp() {
     }
   }
 
-  // 3. Scan ExternalAppShortcut directory (manual shortcuts added in Xbox App)
-  const shortcutDir = path.join(localStateDir, 'ExternalAppShortcut');
-  if (fs.existsSync(shortcutDir)) {
-    try {
-      const files = fs.readdirSync(shortcutDir);
-      for (const file of files) {
-        if (file.endsWith('.json') || file.endsWith('.manifest')) {
-          const sPath = path.join(shortcutDir, file);
-          const sData = readJsonManifest(sPath);
-          if (sData) {
-            const sId = sData.id || path.parse(file).name;
-            const sTitle = sData.title || sData.name || '';
-            const sPathTarget = sData.targetPath || sData.installPath || sData.executablePath || '';
-            registerEntry(`shortcut_${sId}`, {
-              ...sData,
-              id: `shortcut_${sId}`,
-              originalId: sId,
-              title: sTitle,
-              installLocation: sData.installPath || (sPathTarget ? path.dirname(sPathTarget) : ''),
-              executableName: sPathTarget ? path.basename(sPathTarget) : '',
-              sourceFile: file,
-              sourceType: 'external_shortcut',
-              shortcutManifestPath: sPath,
-              isCustom: true
-            });
-          }
-        }
-      }
-    } catch (e) {}
-  }
-
   return {
     localStateExists: exists,
     localStatePath: localStateDir,
-    manifestPath1,
-    manifestPath2,
+    manifestPath,
     customGames: Array.from(existingEntries.values()),
     storeGames: [],
     totalRegisteredXboxTitles: existingEntries.size
@@ -228,21 +203,24 @@ function deduplicateSteamGames(steamGames, xboxData) {
 
   // Build lookup sets and maps for fast, rigorous matching
   const knownAppIds = new Set();
+  const knownGuids = new Set();
   const knownLaunchUris = new Set();
   const knownNormalizedTitles = new Map();
   const knownExecutables = new Set();
   const knownInstallDirs = new Set();
 
   for (const cg of customGames) {
-    // 1. AppIDs and keys
+    // 1. AppIDs, GUIDs, and keys
     if (cg.id) {
       const idStr = String(cg.id).toLowerCase();
+      knownGuids.add(idStr);
       knownAppIds.add(idStr);
       const m = idStr.match(/(\d+)/);
       if (m) knownAppIds.add(m[1]);
     }
     if (cg.originalId) {
       const origStr = String(cg.originalId).toLowerCase();
+      knownGuids.add(origStr);
       knownAppIds.add(origStr);
       const m = origStr.match(/(\d+)/);
       if (m) knownAppIds.add(m[1]);
@@ -273,6 +251,8 @@ function deduplicateSteamGames(steamGames, xboxData) {
   }
 
   return steamGames.map(game => {
+    const appIdStr = String(game.appid);
+    const deterministicGuid = appIdToGuid(appIdStr);
     const normTitle = normalizeTitle(game.name);
     const exeName = game.primaryExecutable ? path.basename(game.primaryExecutable).toLowerCase() : '';
     const normInstall = game.installLocation ? path.normalize(game.installLocation).toLowerCase() : '';
@@ -280,7 +260,10 @@ function deduplicateSteamGames(steamGames, xboxData) {
     let isDuplicate = false;
     let matchReason = '';
 
-    if (knownAppIds.has(String(game.appid)) || knownAppIds.has(`steam_${game.appid}`)) {
+    if (knownGuids.has(deterministicGuid)) {
+      isDuplicate = true;
+      matchReason = `Synchronized to Xbox App (GUID: ${deterministicGuid.substring(0, 8)}...)`;
+    } else if (knownAppIds.has(appIdStr) || knownAppIds.has(`steam_${appIdStr}`)) {
       isDuplicate = true;
       matchReason = `Matched Steam AppID (${game.appid}) in Xbox library`;
     } else if (knownLaunchUris.has(`steam://run/${game.appid}`.toLowerCase())) {
@@ -299,6 +282,7 @@ function deduplicateSteamGames(steamGames, xboxData) {
 
     return {
       ...game,
+      guid: deterministicGuid,
       isDuplicate,
       matchReason
     };
@@ -308,6 +292,7 @@ function deduplicateSteamGames(steamGames, xboxData) {
 module.exports = {
   getXboxLocalStatePath,
   normalizeTitle,
+  appIdToGuid,
   readCustomManifest,
   inspectXboxApp,
   deduplicateSteamGames

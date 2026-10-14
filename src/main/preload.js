@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   uninjectGames: (appIds) => ipcRenderer.invoke('uninject-games', appIds),
   uninjectGame: (appId) => ipcRenderer.invoke('uninject-games', [appId]),
   getBackups: () => ipcRenderer.invoke('get-backups'),
+  createBackup: () => ipcRenderer.invoke('create-backup'),
   restoreBackup: (backupPath) => ipcRenderer.invoke('restore-backup', backupPath),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   createDemoLibrary: () => ipcRenderer.invoke('create-demo-library'),

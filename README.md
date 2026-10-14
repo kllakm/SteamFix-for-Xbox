@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.5.1-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.6.0-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-00A2FF.svg?style=flat-square)](#handheld-experience)
@@ -150,6 +150,33 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
+
+### [v1.6.0] - 2026-10-14
+- **Rigid 340px Card Minimum Dimensions & Responsive Artwork Scaling:**
+  - Standardized all game cards with rigid 340px min-width and 295px min-height across every page and category tab (`Missing`, `Synced`, `All Steam`, `Hidden`, `Xbox Library`), permanently preventing cards from collapsing or scaling unintelligently.
+  - Locked 16:9 widescreen banners to guaranteed 180px minimum height with two-line title clamping for crystal-clear readability.
+- **Overhauled 2D Spatial Controller Navigation Engine:**
+  - True 2D spatial grid navigation with column detection: navigating Up/Down dynamically moves across rows, and Left/Right moves within rows.
+  - Continuous `requestAnimationFrame` polling loop ensures responsive input without frame drops or sleep throttling.
+  - Foreground window focus on launch enables immediate gamepad input without requiring a mouse click.
+  - Dedicated controller mappings: `(A)` Select / Toggle or Uninject, `(B)` Back, `(X)` Toggle Select All, `(Y)` Scan, `(LB/RB)` Top Pages, `(LT/RT)` Category Tabs, `(☰)` FSE.
+- **Console Horizon Topbar & Clean Centered Navigation:**
+  - Center menu navigation (`Library`, `Sync Center`, `Backups`, `Settings`) centered at all times with zero pill borders, using high-end typographic color and luminous glowing underline bars.
+  - Brand header stripped to minimal clean logo mark with title text and version badges removed from topbar.
+  - Cluttered "Xbox App Closed" and "Controller Ready" pills removed; controller input navigates immediately when plugged in.
+  - Scan button replaced with clean refresh icon button; FSE button replaced with dynamic expand / contract icon.
+- **Full-Page Architecture with Directional Slide-In Transitions:**
+  - Replaced Backups and Settings modals with dedicated full-page console views.
+  - Smooth GPU-accelerated directional slide transitions (`slide-left` and `slide-right`) following navigation direction.
+  - Dedicated Sync Center page featuring an injection hero dashboard and batch selection controls.
+- **Full-Screen Dynamic Ambient Parallax Background:**
+  - Multi-layer radial ambient glow canvas shifting position and gradient tones smoothly as users switch between tabs and pages.
+- **Unobtrusive Xbox App Process Notification:**
+  - Discarded persistent process pills; when Xbox App is active, an unobtrusive pulsing alert icon appears in the topbar utilities.
+- **Native Xbox Manifest GUID Schema Fix & Robust Uninject Support:**
+  - Replaced legacy keys with deterministic UUIDv4-compliant GUIDs in `CustomLibraryManagement.manifest`, resolving `FormatException` crashes when adding apps manually in the PC Xbox App "Apps" section.
+  - Purged rogue provider directories and stray files to guarantee Xbox App database health.
+  - Prominent "Uninject" capability across all synced and Xbox titles with automatic timestamped safety backups.
 
 ### [v1.5.1] - 2026-10-13
 - **Universal Windows Controller Engine:**
