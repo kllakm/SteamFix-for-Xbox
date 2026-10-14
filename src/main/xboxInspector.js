@@ -68,34 +68,72 @@ function readCustomManifest(manifestPath) {
 }
 
 /**
+ * Validate whether a string is a standard UUID/GUID
+ */
+function isValidGuid(str) {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str.trim());
+}
+
+/**
+ * Test whether a title is a valid, readable game title (not raw GUIDs, hashes, or image filenames)
+ */
+function isValidHumanTitle(title) {
+  if (!title || typeof title !== 'string') return false;
+  const trimmed = title.trim();
+  if (trimmed.length < 2) return false;
+  // Ignore raw GUIDs used as titles
+  if (isValidGuid(trimmed)) return false;
+  // Ignore raw image/binary filenames
+  if (/\.(png|jpg|jpeg|ico|exe|dll|json|manifest|tmp|vdf|bin)$/i.test(trimmed)) return false;
+  // Ignore pure numbers (e.g. "123456", "730")
+  if (/^\d+$/.test(trimmed)) return false;
+  // Ignore hex hashes (e.g. md5/sha1/sha256 24+ hex chars)
+  if (/^[0-9a-fA-F]{24,}$/.test(trimmed)) return false;
+  return true;
+}
+
+/**
  * Enumerate all games currently recognized, scanned, or sideloaded in the Xbox App
  */
 function inspectXboxApp() {
   const localStateDir = getXboxLocalStatePath();
   const exists = fs.existsSync(localStateDir);
 
+  // Clean rogue legacy directories created by earlier versions
+  try {
+    const rogueThirdPartyCustom = path.join(localStateDir, 'ThirdPartyLibraries', 'CustomLibraryManagement');
+    if (fs.existsSync(rogueThirdPartyCustom)) {
+      fs.rmSync(rogueThirdPartyCustom, { recursive: true, force: true });
+    }
+  } catch (e) {}
+
   const manifestPath = path.join(localStateDir, 'CustomLibraryManagement', 'CustomLibraryManagement.manifest');
   const manifest = readCustomManifest(manifestPath);
 
   const existingEntries = new Map();
 
-  // Helper to register an entry
+  // Helper to register an entry only if it has a verified, readable title
   const registerEntry = (key, entry) => {
-    if (!key) return;
+    if (!key || !entry) return;
     const normKey = String(key).toLowerCase();
     if (!existingEntries.has(normKey)) {
       existingEntries.set(normKey, entry);
     }
   };
 
-  // 1. Process CustomLibraryManagement manifest
+  // 1. Process CustomLibraryManagement manifest (injected / custom titles)
   if (manifest && manifest.gameCache) {
     for (const [key, entry] of Object.entries(manifest.gameCache)) {
       if (!entry || typeof entry !== 'object') continue;
+      const titleCandidate = entry.title || entry.name || '';
+      if (!isValidHumanTitle(titleCandidate)) continue;
+
       registerEntry(key, {
         ...entry,
         id: entry.id || key,
         originalId: key,
+        title: titleCandidate.trim(),
         sourceFile: 'CustomLibraryManagement.manifest',
         sourceType: 'custom_manifest',
         isCustom: true
@@ -138,13 +176,17 @@ function inspectXboxApp() {
           for (const item of entries) {
             const rawId = item.id || item._key || item.title;
             if (!rawId) continue;
+            const titleCandidate = item.title || item.name || '';
+            // Strictly require a human-readable title: never create entries from raw file hashes or empty strings
+            if (!isValidHumanTitle(titleCandidate)) continue;
+
             const entryId = `${prov}_${rawId}`;
             registerEntry(entryId, {
               ...item,
               id: entryId,
               originalId: rawId,
               provider: prov,
-              title: item.title || item.name || '',
+              title: titleCandidate.trim(),
               installLocation: item.installLocation || item.installPath || '',
               executableName: item.executableName || '',
               sourceFile: path.basename(mFile),
@@ -154,34 +196,6 @@ function inspectXboxApp() {
           }
         }
       }
-
-      // Check provider thumbnail files (e.g. steam_<appid>.png, <appid>.png)
-      try {
-        const files = fs.readdirSync(provDir);
-        for (const file of files) {
-          const lower = file.toLowerCase();
-          if (lower.endsWith('.png') || lower.endsWith('.jpg')) {
-            const base = path.parse(file).name;
-            let appId = base;
-            if (base.startsWith(`${prov}_`)) {
-              appId = base.substring(prov.length + 1);
-            }
-            const key = `${prov}_${appId}`;
-            if (!existingEntries.has(key.toLowerCase())) {
-              registerEntry(key, {
-                id: key,
-                originalId: appId,
-                provider: prov,
-                title: appId,
-                thumbnailFile: path.join(provDir, file),
-                sourceFile: file,
-                sourceType: `${prov}_thumbnail`,
-                isCustom: false
-              });
-            }
-          }
-        }
-      } catch (e) {}
     }
   }
 
@@ -196,57 +210,63 @@ function inspectXboxApp() {
 }
 
 /**
- * Deduplicate a list of Steam games against current Xbox App registrations
+ * Strictly deduplicate a list of Steam games against current Xbox App registrations
+ * Prevents false positives by only matching verified GUIDs, explicit AppIDs, Launch URIs, or exact titles.
  */
 function deduplicateSteamGames(steamGames, xboxData) {
-  const customGames = xboxData.customGames || [];
+  const customGames = (xboxData && xboxData.customGames) ? xboxData.customGames : [];
 
-  // Build lookup sets and maps for fast, rigorous matching
-  const knownAppIds = new Set();
+  // Build lookup sets and maps for rigorous, exact matching
   const knownGuids = new Set();
+  const knownAppIds = new Set();
   const knownLaunchUris = new Set();
   const knownNormalizedTitles = new Map();
-  const knownExecutables = new Set();
-  const knownInstallDirs = new Set();
 
   for (const cg of customGames) {
-    // 1. AppIDs, GUIDs, and keys
+    // 1. GUIDs (only valid GUIDs)
+    if (cg.id && isValidGuid(cg.id)) {
+      knownGuids.add(cg.id.toLowerCase());
+    }
+    if (cg.originalId && isValidGuid(cg.originalId)) {
+      knownGuids.add(cg.originalId.toLowerCase());
+    }
+
+    // 2. Explicit Steam AppIDs
+    // Match explicit steam://run/<appid> or steam://rungameid/<appid>
+    if (cg.launchUri) {
+      const lowerUri = cg.launchUri.toLowerCase().trim();
+      knownLaunchUris.add(lowerUri);
+      const m = lowerUri.match(/steam:\/\/(?:run|rungameid)\/(\d+)/i);
+      if (m) {
+        knownAppIds.add(m[1]);
+      }
+    }
+    // Match explicit steam_<appid> or pure numeric id
     if (cg.id) {
-      const idStr = String(cg.id).toLowerCase();
-      knownGuids.add(idStr);
-      knownAppIds.add(idStr);
-      const m = idStr.match(/(\d+)/);
-      if (m) knownAppIds.add(m[1]);
+      const idLower = String(cg.id).toLowerCase().trim();
+      const mSteam = idLower.match(/^steam_(\d+)$/i);
+      if (mSteam) {
+        knownAppIds.add(mSteam[1]);
+      } else if (/^\d+$/.test(idLower)) {
+        knownAppIds.add(idLower);
+      }
     }
     if (cg.originalId) {
-      const origStr = String(cg.originalId).toLowerCase();
-      knownGuids.add(origStr);
-      knownAppIds.add(origStr);
-      const m = origStr.match(/(\d+)/);
-      if (m) knownAppIds.add(m[1]);
+      const origLower = String(cg.originalId).toLowerCase().trim();
+      const mSteam = origLower.match(/^steam_(\d+)$/i);
+      if (mSteam) {
+        knownAppIds.add(mSteam[1]);
+      } else if (/^\d+$/.test(origLower)) {
+        knownAppIds.add(origLower);
+      }
     }
 
-    // 2. Launch URIs
-    if (cg.launchUri) {
-      knownLaunchUris.add(cg.launchUri.toLowerCase());
-      const m = cg.launchUri.match(/steam:\/\/run\/(\d+)/i);
-      if (m) knownAppIds.add(m[1]);
-    }
-
-    // 3. Titles
-    if (cg.title) {
+    // 3. Titles (only meaningful titles, length >= 3, not pure numbers)
+    if (cg.title && isValidHumanTitle(cg.title)) {
       const norm = normalizeTitle(cg.title);
-      if (norm) knownNormalizedTitles.set(norm, cg.title);
-    }
-
-    // 4. Executables
-    if (cg.executableName) {
-      knownExecutables.add(path.basename(cg.executableName).toLowerCase());
-    }
-
-    // 5. Install locations
-    if (cg.installLocation) {
-      knownInstallDirs.add(path.normalize(cg.installLocation).toLowerCase());
+      if (norm && norm.length >= 3) {
+        knownNormalizedTitles.set(norm, cg.title);
+      }
     }
   }
 
@@ -254,8 +274,7 @@ function deduplicateSteamGames(steamGames, xboxData) {
     const appIdStr = String(game.appid);
     const deterministicGuid = appIdToGuid(appIdStr);
     const normTitle = normalizeTitle(game.name);
-    const exeName = game.primaryExecutable ? path.basename(game.primaryExecutable).toLowerCase() : '';
-    const normInstall = game.installLocation ? path.normalize(game.installLocation).toLowerCase() : '';
+    const launchUri = `steam://run/${appIdStr}`.toLowerCase();
 
     let isDuplicate = false;
     let matchReason = '';
@@ -263,21 +282,15 @@ function deduplicateSteamGames(steamGames, xboxData) {
     if (knownGuids.has(deterministicGuid)) {
       isDuplicate = true;
       matchReason = `Synchronized to Xbox App (GUID: ${deterministicGuid.substring(0, 8)}...)`;
-    } else if (knownAppIds.has(appIdStr) || knownAppIds.has(`steam_${appIdStr}`)) {
+    } else if (knownAppIds.has(appIdStr)) {
       isDuplicate = true;
       matchReason = `Matched Steam AppID (${game.appid}) in Xbox library`;
-    } else if (knownLaunchUris.has(`steam://run/${game.appid}`.toLowerCase())) {
+    } else if (knownLaunchUris.has(launchUri)) {
       isDuplicate = true;
-      matchReason = `Matched Launch URI (steam://run/${game.appid})`;
-    } else if (knownNormalizedTitles.has(normTitle)) {
+      matchReason = `Matched Launch URI (${launchUri})`;
+    } else if (normTitle && normTitle.length >= 3 && knownNormalizedTitles.has(normTitle)) {
       isDuplicate = true;
       matchReason = `Matched Xbox title "${knownNormalizedTitles.get(normTitle)}"`;
-    } else if (exeName && knownExecutables.has(exeName)) {
-      isDuplicate = true;
-      matchReason = `Matched executable name (${exeName})`;
-    } else if (normInstall && knownInstallDirs.has(normInstall)) {
-      isDuplicate = true;
-      matchReason = `Matched game folder in Xbox library`;
     }
 
     return {
@@ -293,6 +306,8 @@ module.exports = {
   getXboxLocalStatePath,
   normalizeTitle,
   appIdToGuid,
+  isValidGuid,
+  isValidHumanTitle,
   readCustomManifest,
   inspectXboxApp,
   deduplicateSteamGames

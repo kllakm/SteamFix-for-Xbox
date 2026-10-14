@@ -5,7 +5,7 @@ const packageJson = require('../../package.json');
 const { scanSteamLibraries } = require('./steamScanner');
 const { inspectXboxApp, deduplicateSteamGames, getXboxLocalStatePath } = require('./xboxInspector');
 const { checkXboxProcesses, closeXboxProcesses } = require('./processSafety');
-const { injectSteamGames, uninjectSteamGames, listBackups, restoreBackup, createSafetyBackups } = require('./injector');
+const { injectSteamGames, uninjectSteamGames, listBackups, restoreBackup, repairXboxDatabase, createSafetyBackups } = require('./injector');
 const { createMockSteamLibrary } = require('./fixtureGenerator');
 
 // Configure Chromium command line switches for universal gamepad support
@@ -175,7 +175,18 @@ ipcMain.handle('get-backups', async () => {
 
 ipcMain.handle('restore-backup', async (_event, backupPath) => {
   try {
+    await closeXboxProcesses();
     const result = restoreBackup(backupPath);
+    return { success: true, result };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('repair-xbox-database', async () => {
+  try {
+    await closeXboxProcesses();
+    const result = repairXboxDatabase();
     return { success: true, result };
   } catch (error) {
     return { success: false, error: error.message };

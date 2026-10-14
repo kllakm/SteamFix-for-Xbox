@@ -294,6 +294,22 @@ body.controller-active .console-subnav-strip .controller-badge {
   display: inline-flex !important;
 }
 
+/* Hide mouse cursor universally across entire viewport when controller is active */
+body.controller-active,
+body.controller-active * {
+  cursor: none !important;
+}
+
+/* Modal Controller Face Button Badges (A / B) */
+.modal-controller-badge {
+  display: none !important;
+  margin-right: 8px;
+}
+
+body.controller-active .modal-controller-badge {
+  display: inline-flex !important;
+}
+
 /* Settings Reference Guide: badges are ALWAYS visible */
 .controls-guide-grid .controller-badge,
 .controls-guide-grid .badge-bumper,
@@ -742,8 +758,8 @@ body.controller-active .console-subnav-strip .controller-badge {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 32px;
-  padding-top: 4px;
+  padding: 12px 14px 40px 14px;
+  margin: 0 -14px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
@@ -1204,15 +1220,16 @@ body.controller-active .console-subnav-strip .controller-badge {
   font-size: 0.92rem;
 }
 
-/* Settings Grid */
+/* Settings Grid: Adaptive layout that cleanly reflows when scaled down */
 .settings-grid-layout {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 24px;
-  padding-bottom: 32px;
+  padding: 4px 6px 48px 6px;
   width: 100%;
 }
 
@@ -1225,7 +1242,6 @@ body.controller-active .console-subnav-strip .controller-badge {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-  overflow: hidden;
 }
 
 .settings-card-wide {
@@ -1314,7 +1330,7 @@ body.controller-active .console-subnav-strip .controller-badge {
 
 .controls-guide-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
   width: 100%;
 }
@@ -1709,3 +1725,121 @@ body.fse-active .console-footer {
   min-height: 56px;
   padding: 0 48px;
 }
+
+/* ==========================================================================
+   10. Responsive Adaptations for Scaled-Down Window & Handhelds
+   ========================================================================== */
+@media (max-width: 960px) {
+  .settings-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding-bottom: 56px;
+  }
+
+  .settings-action-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .settings-action-row button {
+    align-self: flex-start;
+  }
+
+  .controls-guide-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .console-topbar {
+    padding: 0 16px;
+  }
+
+  .console-page {
+    padding: 0 16px;
+  }
+
+  .games-showcase {
+    padding: 12px 10px 40px 10px;
+    margin: 0 -10px;
+  }
+
+  .settings-grid-layout {
+    padding: 4px 2px 56px 2px;
+  }
+}
+
+/* Header Action Group */
+.header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Danger Button Styling */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  font-weight: 600;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: #ef4444;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
+}
+
+/* Toast Notifications */
+.console-toast-container {
+  position: fixed;
+  bottom: 68px;
+  right: 28px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.console-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(13, 20, 27, 0.94);
+  border: 1px solid rgba(0, 229, 117, 0.4);
+  border-radius: 10px;
+  color: #f0f6fc;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 229, 117, 0.2);
+  backdrop-filter: blur(12px);
+  animation: toastFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.console-toast.toast-error {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
+.console-toast.toast-info {
+  border-color: rgba(0, 162, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 162, 255, 0.2);
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

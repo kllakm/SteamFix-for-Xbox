@@ -2,7 +2,7 @@
 
 Bridging your Steam library seamlessly into the modern PC Xbox App.
 
-[![Release](https://img.shields.io/badge/release-v1.6.3-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
+[![Release](https://img.shields.io/badge/release-v1.6.6-00A2FF.svg?style=flat-square)](https://github.com/your-org/SteamFix-for-Xbox/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-107C10.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![Gamepad](https://img.shields.io/badge/controller-Xbox%20%26%20Handheld%20Gamepad-107C10.svg?style=flat-square)](#controller-navigation)
 [![Handheld](https://img.shields.io/badge/device-ROG%20Ally%20%2F%20Legion%20Go%20Ready-00A2FF.svg?style=flat-square)](#handheld-experience)
@@ -150,7 +150,40 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 ---
 
 ## Changelog
- 
+
+### [v1.6.5] - 2026-10-14
+- **Eliminated False Positive Xbox App Game Detection:**
+  - Overhauled Steam title deduplication against the PC Xbox App to eliminate false positive matches.
+  - Removed broad regex digit matching (`/\d+/`) that erroneously extracted numbers from unrelated GUIDs or filenames and treated them as Steam AppIDs.
+  - Removed loose matching against common executable names (e.g., `game.exe`, `Shipping.exe`, `Launcher.exe`) and installation directories.
+  - Deduplication now strictly requires verified deterministic GUIDs, explicit Steam launch protocol URIs (`steam://run/<appid>`), explicit AppIDs (`steam_<appid>`), or verified exact normalized titles.
+- **Clean Xbox Library Tab & Verified Artwork System:**
+  - Removed loose thumbnail cache directory scanning from Xbox provider folders (`ThirdPartyLibraries`), which previously created dozens of ghost entries from raw `.png` cache files.
+  - Strict human-readable title filtering: entries without valid titles (or titles consisting solely of GUIDs, raw numbers, or file extensions) are ignored.
+  - Guaranteed artwork display on Xbox tiles: automatically resolves Steam CDN banner artwork from launch protocols, converts local Windows image paths to safe `file:///` URLs, and uses an inline SVG data URI poster fallback with title and Xbox badge rather than dead external links.
+  - Dynamic tab visibility: automatically hides the "Xbox Library" tab when zero valid Xbox games exist, ensuring users never see an empty or broken tab.
+
+### [v1.6.4] - 2026-10-14
+- **Unclipped Tile Focus Halo & Inner Container Padding:**
+  - Added dedicated padding and margin compensation to `.games-showcase` so the 3px cyan focus halo, scale lift, and ambient glow around game cards never clip against the scroll container's inner bounds or corners.
+- **Deep & Resilient Uninject Engine:**
+  - Re-engineered `uninjectSteamGames` to comprehensively remove titles matching AppIDs, deterministic GUIDs, raw keys, and normalized game titles.
+  - Automatically cleans entries across primary and secondary manifests (`CustomLibraryManagement.manifest`, `ThirdPartyLibraries\steam`, and legacy rogue paths), removes companion thumbnails, and purges shortcut files.
+  - Ensures background Xbox processes are gracefully closed before uninjecting to release file locks.
+- **Xbox Process Safety & XboxPcAppFT Filtering:**
+  - Resolved false "Xbox App is running" detection caused by background servicing tasks (`XboxPcAppFT.exe`).
+  - Switched process inspection to exact base executable matching and explicitly ignored non-locking background stubs (`XboxPcAppFT.exe`) so closing the main Xbox App is recognized immediately.
+- **Controller-Usable Confirmation Modals with (A) and (B) Action Badges:**
+  - Integrated controller focus management into all confirmation dialogs (`confirmModal`, `uninjectModal`, and `xboxRunningModal`).
+  - Rendered authentic `(A)` and `(B)` controller action badges on modal buttons when controller is active.
+  - Wired direct `(A)` button press to Confirm / Proceed and `(B)` button press to Cancel / Dismiss, with D-pad / thumbstick navigation between options.
+- **Universal Mouse Cursor Auto-Hiding in Controller Mode:**
+  - Implemented universal cursor hiding (`cursor: none`) across the entire application viewport whenever controller input is engaged.
+  - Instant mouse restoration when intentional mouse movement (>25px) or mouse clicks are detected.
+- **Responsive Settings Grid Scaling & Breakpoint Overhaul:**
+  - Overhauled `.settings-grid-layout` with `min-height: 0` and responsive `repeat(auto-fit, minmax(360px, 1fr))` column track sizing.
+  - Added media query breakpoints (`@media (max-width: 960px)` and `@media (max-width: 820px)`) allowing the settings layout and action rows to smoothly collapse into a single column when scaling down the window or running on compact handheld displays without clipping or hiding settings.
+
 ### [v1.6.3] - 2026-10-14
 - **Clean Pill-Free Second Row Navigation (Library Categories):**
   - Removed all enclosing pill borders, background shapes, and pill bubble outlines from category tabs (`Missing from Xbox`, `Synced`, `All Steam`, `Hidden`, `Xbox Library`).
@@ -185,6 +218,26 @@ This project adheres to the quality standards defined in [PROJECT_RULES.md](PROJ
 - **Settings Layout & Vector Icon Badges:**
   - Fixed "Add Custom Folder" header collision in Settings using dedicated flex spacing and vertical alignment.
   - Modernized Controller & Handheld Navigation guide in Settings: replaced overflowing text badges with authentic concentric circle thumbstick icon, directional pad cross SVG, and individual bumper/trigger badges that fit cleanly without wrapping outside cards.
+
+### [v1.6.6] - 2026-10-14
+- **WinRT CustomLibraryItem Schema Compliance & Xbox App Crash Fix:**
+  - Resolved the fatal crash in PC Xbox App (`Microsoft.GamingApp` / `XboxPcAppFT.exe`) when opening the "Add an app" dialog after injecting custom titles.
+  - Reverse-engineered `XboxPcAppFT.winmd` and enforced strict conformance to the WinRT `ICustomLibraryItem` specification:
+    - Guaranteed the presence of `type: 1` (`CustomLibraryItemType.Game = 1`), preventing unhandled `.GetNamedNumber(L"type")` null exceptions in the Xbox App runtime.
+    - Set `installLocation` accurately to the executable's enclosing directory via `path.dirname()`, resolving path verification failures on subfolder executables.
+    - Standardized `lastPlayedDate: 0` and full GUID string representation.
+- **Valid Binary PNG Fallback Artwork Generation:**
+  - Replaced legacy text SVG fallback artwork (which was saved with a `.png` file extension and crashed Windows Imaging Component / DirectX decoders inside Xbox App) with valid compressed 460x215 32-bit RGBA binary PNGs generated via Node.js native `zlib`.
+- **Safety Backups & Snapshot Restore Overhaul:**
+  - Restoring safety backups now explicitly terminates active Xbox App processes (`XboxPcApp.exe`, `XboxPcAppFT.exe`) prior to file writing, eliminating silent file lock failures and cache write-backs.
+  - Added interactive confirmation dialog for backup restoration with full gamepad `(A)` and `(B)` button support.
+  - Added auto-sanitization on restored manifests to automatically repair legacy entries and ensure `type: 1` is applied to all cached items upon restoration.
+  - Wired up "Create Snapshot Now" button with immediate feedback.
+- **One-Click Xbox Database Repair & Reset:**
+  - Added dedicated "Repair Xbox Database" buttons to the Backups page and Settings page.
+  - Instantly resets `CustomLibraryManagement.manifest` to a clean factory state, purges rogue provider folders (`ThirdPartyLibraries\CustomLibraryManagement`), and saves a safety backup before resetting.
+- **Dynamic Floating Toast Notification Engine:**
+  - Added animated, non-intrusive console toast notifications for snapshot creation, database repair, backup restoration, injection, and uninjection.
 
 ### [v1.6.0] - 2026-10-14
 - **Rigid 340px Card Minimum Dimensions & Responsive Artwork Scaling:**

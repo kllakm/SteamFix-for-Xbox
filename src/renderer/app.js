@@ -22,7 +22,7 @@ function saveHiddenAppIds(set) {
 
 // Global Application State
 const appState = {
-  version: '1.6.3',
+  version: '1.6.6',
   currentSection: 'library',
   currentSectionIndex: 0,
   currentTab: 'missing',
@@ -77,6 +77,7 @@ const badgeSynced = document.getElementById('badgeSynced');
 const badgeAll = document.getElementById('badgeAll');
 const badgeHidden = document.getElementById('badgeHidden');
 const badgeXbox = document.getElementById('badgeXbox');
+const tabXbox = document.getElementById('tabXbox');
 
 // Search & Actions
 const searchInput = document.getElementById('searchInput');
@@ -97,6 +98,7 @@ const syncBtnLabel = document.getElementById('syncBtnLabel');
 // Backups Full Page
 const backupsList = document.getElementById('backupsList');
 const btnCreateBackup = document.getElementById('btnCreateBackup');
+const btnRepairDatabase = document.getElementById('btnRepairDatabase');
 
 // Settings Full Page
 const settingsLibrariesList = document.getElementById('settingsLibrariesList');
@@ -104,6 +106,7 @@ const btnSettingsAddFolder = document.getElementById('btnSettingsAddFolder');
 const btnResetHidden = document.getElementById('btnResetHidden');
 const settingsHiddenCount = document.getElementById('settingsHiddenCount');
 const settingsXboxPath = document.getElementById('settingsXboxPath');
+const btnSettingsRepairDatabase = document.getElementById('btnSettingsRepairDatabase');
 
 // Footer
 const footerSteamStatus = document.getElementById('footerSteamStatus');
@@ -130,6 +133,22 @@ const btnCloseXboxRunning = document.getElementById('btnCloseXboxRunning');
 const btnDismissXboxRunning = document.getElementById('btnDismissXboxRunning');
 const btnKillXboxModal = document.getElementById('btnKillXboxModal');
 const xboxProcessesSummary = document.getElementById('xboxProcessesSummary');
+
+// Restore & Repair Modals
+const restoreModal = document.getElementById('restoreModal');
+const restoreSnapshotName = document.getElementById('restoreSnapshotName');
+const btnCloseRestore = document.getElementById('btnCloseRestore');
+const btnCancelRestore = document.getElementById('btnCancelRestore');
+const btnProceedRestore = document.getElementById('btnProceedRestore');
+let pendingRestorePath = null;
+let pendingRestoreName = '';
+
+const repairModal = document.getElementById('repairModal');
+const btnCloseRepair = document.getElementById('btnCloseRepair');
+const btnCancelRepair = document.getElementById('btnCancelRepair');
+const btnProceedRepair = document.getElementById('btnProceedRepair');
+
+const toastContainer = document.getElementById('toastContainer');
 
 // ============================================================================
 // Initialization
@@ -246,11 +265,62 @@ function setupEventListeners() {
     btnCreateBackup.addEventListener('click', async () => {
       try {
         const res = await window.api.createBackup();
-        if (res.success) {
+        if (res && res.success) {
+          showToast(`Snapshot created: ${res.filename || 'Manifest backup'}`);
           await loadBackups();
+        } else {
+          showToast('Failed to create snapshot', 'error');
         }
       } catch (e) {
         console.error('Backup creation error:', e);
+        showToast('Error creating backup: ' + (e?.message || e), 'error');
+      }
+    });
+  }
+
+  // Repair Database Buttons
+  if (btnRepairDatabase) {
+    btnRepairDatabase.addEventListener('click', promptRepairDatabase);
+  }
+  if (btnSettingsRepairDatabase) {
+    btnSettingsRepairDatabase.addEventListener('click', promptRepairDatabase);
+  }
+
+  // Repair Modal Buttons
+  if (btnCloseRepair) {
+    btnCloseRepair.addEventListener('click', () => { repairModal.style.display = 'none'; });
+  }
+  if (btnCancelRepair) {
+    btnCancelRepair.addEventListener('click', () => { repairModal.style.display = 'none'; });
+  }
+  if (btnProceedRepair) {
+    btnProceedRepair.addEventListener('click', async () => {
+      repairModal.style.display = 'none';
+      await executeRepairDatabase();
+    });
+  }
+
+  // Restore Modal Buttons
+  if (btnCloseRestore) {
+    btnCloseRestore.addEventListener('click', () => {
+      restoreModal.style.display = 'none';
+      pendingRestorePath = null;
+    });
+  }
+  if (btnCancelRestore) {
+    btnCancelRestore.addEventListener('click', () => {
+      restoreModal.style.display = 'none';
+      pendingRestorePath = null;
+    });
+  }
+  if (btnProceedRestore) {
+    btnProceedRestore.addEventListener('click', async () => {
+      if (pendingRestorePath) {
+        const path = pendingRestorePath;
+        const name = pendingRestoreName;
+        restoreModal.style.display = 'none';
+        pendingRestorePath = null;
+        await executeRestoreBackup(path, name);
       }
     });
   }
@@ -263,6 +333,7 @@ function setupEventListeners() {
           xboxProcessesSummary.textContent = `Active: ${appState.processInfo.processes.map(p => p.name).join(', ')}`;
         }
         xboxRunningModal.style.display = 'flex';
+        controllerNav.applyFocus(btnKillXboxModal);
       }
     });
   }
@@ -427,9 +498,14 @@ function switchSectionByOffset(offset) {
 }
 
 function switchTabByOffset(offset) {
-  const currentIdx = TABS.indexOf(appState.currentTab);
-  const nextIdx = (currentIdx + offset + TABS.length) % TABS.length;
-  const nextTab = TABS[nextIdx];
+  const visibleTabs = TABS.filter(tab => {
+    const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+    return btn && btn.style.display !== 'none';
+  });
+  if (visibleTabs.length === 0) return;
+  const currentIdx = visibleTabs.indexOf(appState.currentTab);
+  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + offset + visibleTabs.length) % visibleTabs.length;
+  const nextTab = visibleTabs[nextIdx];
   const targetBtn = document.querySelector(`.tab-btn[data-tab="${nextTab}"]`);
   if (targetBtn) targetBtn.click();
 }
@@ -530,7 +606,8 @@ async function triggerScan() {
         footerSteamStatus.textContent = `${appState.games.length} Steam Titles`;
       }
       if (footerXboxStatus) {
-        const xboxCount = (res.xboxData && res.xboxData.totalRegisteredXboxTitles) || 0;
+        const rawXbox = (res.xboxData && res.xboxData.customGames) ? res.xboxData.customGames : [];
+        const xboxCount = rawXbox.filter(x => isValidXboxTitle(x.title)).length;
         footerXboxStatus.textContent = `${xboxCount} In Xbox Database`;
       }
 
@@ -567,18 +644,45 @@ function renderAllPages() {
   updateSettingsUI();
 }
 
+function isValidXboxTitle(title) {
+  if (!title || typeof title !== 'string') return false;
+  const t = title.trim();
+  if (t.length < 2) return false;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(t)) return false;
+  if (/\.(png|jpg|jpeg|ico|exe|dll|json|manifest|tmp|vdf|bin)$/i.test(t)) return false;
+  if (/^\d+$/.test(t)) return false;
+  if (/^[0-9a-fA-F]{24,}$/.test(t)) return false;
+  return true;
+}
+
 function updateCategoryBadges() {
   const missing = appState.games.filter(g => !g.isDuplicate && !appState.hiddenAppIds.has(String(g.appid)));
   const synced = appState.games.filter(g => g.isDuplicate);
   const allSteam = appState.games;
   const hidden = appState.games.filter(g => appState.hiddenAppIds.has(String(g.appid)));
-  const xboxCustom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
+  const rawXbox = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
+  const xboxCustom = rawXbox.filter(x => isValidXboxTitle(x.title));
 
   if (badgeMissing) badgeMissing.textContent = missing.length;
   if (badgeSynced) badgeSynced.textContent = synced.length;
   if (badgeAll) badgeAll.textContent = allSteam.length;
   if (badgeHidden) badgeHidden.textContent = hidden.length;
   if (badgeXbox) badgeXbox.textContent = xboxCustom.length;
+
+  // If there are no valid custom Xbox titles, hide the tab completely; otherwise show it
+  if (tabXbox) {
+    if (xboxCustom.length === 0) {
+      tabXbox.style.display = 'none';
+      if (appState.currentTab === 'xbox') {
+        appState.currentTab = 'missing';
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-tab') === 'missing');
+        });
+      }
+    } else {
+      tabXbox.style.display = '';
+    }
+  }
 
   const subtitles = {
     missing: 'Missing from Xbox',
@@ -619,7 +723,8 @@ function renderLibraryPage() {
   } else if (appState.currentTab === 'hidden') {
     list = appState.games.filter(g => appState.hiddenAppIds.has(String(g.appid)));
   } else if (appState.currentTab === 'xbox') {
-    const custom = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
+    const rawXbox = (appState.xboxData && appState.xboxData.customGames) ? appState.xboxData.customGames : [];
+    const custom = rawXbox.filter(x => isValidXboxTitle(x.title));
     renderXboxList(q ? custom.filter(x => (x.title || '').toLowerCase().includes(q)) : custom);
     return;
   }
@@ -812,20 +917,79 @@ function createGameCard(game, contextTab) {
   return card;
 }
 
+function generateTileFallbackSvg(title) {
+  const safeTitle = (title || 'Xbox Title')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="460" height="215" viewBox="0 0 460 215">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0a1219"/>
+        <stop offset="50%" stop-color="#101c26"/>
+        <stop offset="100%" stop-color="#050a0f"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="50%" cy="40%" r="50%">
+        <stop offset="0%" stop-color="#107c41" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#107c41" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="460" height="215" fill="url(#bg)"/>
+    <rect width="460" height="215" fill="url(#glow)"/>
+    <circle cx="230" cy="85" r="32" fill="#107c41" fill-opacity="0.2" stroke="#00e575" stroke-width="2"/>
+    <path d="M220 75c6 4 14 4 20 0m-20 20c6-4 14-4 20 0m-16-16l12 12m0-12l-12 12" stroke="#00e575" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <text x="230" y="160" text-anchor="middle" fill="#f0f6fc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" letter-spacing="0.5">${safeTitle.substring(0, 36)}</text>
+    <text x="230" y="185" text-anchor="middle" fill="#00e575" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1">XBOX LIBRARY</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 function renderXboxList(xboxGames) {
   gamesContainer.innerHTML = '';
-  if (xboxGames.length === 0) {
+  const validGames = (xboxGames || []).filter(entry => isValidXboxTitle(entry.title));
+
+  if (validGames.length === 0) {
     renderEmptyState(gamesContainer);
     return;
   }
 
-  xboxGames.forEach(entry => {
+  validGames.forEach(entry => {
     const card = document.createElement('div');
     card.className = 'game-card';
     card.setAttribute('tabindex', '0');
-    const isCustom = entry.isCustom;
-    const title = entry.title || 'Unknown Title';
-    const imagePath = entry.imagePath || entry.bannerUrl || 'https://assets.xboxservices.com/assets/79/32/7932e6a9-8588-4db9-8b89-299f01bc49b0.jpg';
+    const isCustom = entry.isCustom !== false;
+    const title = entry.title.trim();
+
+    // Determine artwork URL
+    let artSrc = '';
+    // 1. If Steam launchUri, extract AppID and use Steam CDN
+    if (entry.launchUri) {
+      const m = entry.launchUri.match(/steam:\/\/(?:run|rungameid)\/(\d+)/i);
+      if (m) {
+        artSrc = `https://cdn.cloudflare.steamstatic.com/steam/apps/${m[1]}/header.jpg`;
+      }
+    }
+    if (!artSrc && entry.id) {
+      const m = String(entry.id).match(/^steam_(\d+)$/i);
+      if (m) {
+        artSrc = `https://cdn.cloudflare.steamstatic.com/steam/apps/${m[1]}/header.jpg`;
+      }
+    }
+    // 2. If local image path exists, format as file:/// URL safely
+    if (!artSrc && entry.imagePath) {
+      const cleanPath = entry.imagePath.replace(/\\/g, '/');
+      artSrc = cleanPath.startsWith('file:///') ? cleanPath : `file:///${cleanPath}`;
+    }
+    if (!artSrc && entry.bannerUrl) {
+      artSrc = entry.bannerUrl;
+    }
+    const fallbackSvg = generateTileFallbackSvg(title);
+    if (!artSrc) {
+      artSrc = fallbackSvg;
+    }
+
+    const safeTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     card.innerHTML = `
       <div class="card-header-art">
@@ -840,10 +1004,10 @@ function renderXboxList(xboxGames) {
             <line x1="16.5" y1="7.5" x2="7.5" y2="16.5"/>
           </svg>
         </div>
-        <img src="${imagePath}" alt="${title}" onerror="this.src='https://assets.xboxservices.com/assets/79/32/7932e6a9-8588-4db9-8b89-299f01bc49b0.jpg'" />
+        <img src="${artSrc}" alt="${safeTitle}" onerror="this.onerror=null; this.src='${fallbackSvg}';" />
       </div>
       <div class="card-body">
-        <h3 class="game-title" title="${title}">${title}</h3>
+        <h3 class="game-title" title="${safeTitle}">${safeTitle}</h3>
         <div class="game-meta">
           <span>${entry.id ? String(entry.id).substring(0, 18) + '...' : 'ID'}</span>
           <span>•</span>
@@ -917,14 +1081,8 @@ async function loadBackups() {
         `;
 
         const restoreBtn = item.querySelector('.btn-restore-item');
-        restoreBtn.addEventListener('click', async () => {
-          try {
-            await window.api.restoreBackup(b.fullPath);
-            await triggerScan();
-            await loadBackups();
-          } catch (e) {
-            console.error('Restore error:', e);
-          }
+        restoreBtn.addEventListener('click', () => {
+          promptRestoreBackup(b.fullPath, b.filename);
         });
 
         backupsList.appendChild(item);
@@ -934,6 +1092,97 @@ async function loadBackups() {
     }
   } catch {
     backupsList.innerHTML = '<div class="empty-backups">Failed to load backups.</div>';
+  }
+}
+
+// ============================================================================
+// Toast Notification Engine
+// ============================================================================
+function showToast(message, type = 'success', duration = 3500) {
+  if (!toastContainer) return;
+  const toast = document.createElement('div');
+  toast.className = `console-toast toast-${type}`;
+
+  let iconSvg = '';
+  if (type === 'success') {
+    iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#00E575" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+  } else if (type === 'error') {
+    iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+  } else {
+    iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#00A2FF" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+  }
+
+  toast.innerHTML = `
+    ${iconSvg}
+    <div class="toast-content">${message}</div>
+  `;
+  toastContainer.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.add('active');
+  });
+
+  setTimeout(() => {
+    toast.classList.remove('active');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 300);
+  }, duration);
+}
+
+// Restore & Repair Handlers
+function promptRestoreBackup(filePath, filename) {
+  pendingRestorePath = filePath;
+  pendingRestoreName = filename || 'snapshot';
+  if (restoreSnapshotName) restoreSnapshotName.textContent = pendingRestoreName;
+  if (restoreModal) {
+    restoreModal.style.display = 'flex';
+    if (btnProceedRestore) {
+      controllerNav.applyFocus(btnProceedRestore);
+    }
+  }
+}
+
+async function executeRestoreBackup(filePath, filename) {
+  try {
+    showToast(`Restoring ${filename}...`, 'info', 2000);
+    const res = await window.api.restoreBackup(filePath);
+    if (res && res.success) {
+      showToast(`Snapshot restored successfully! Verified ${res.gamesRestoredCount || 0} titles.`);
+      await triggerScan();
+      await loadBackups();
+    } else {
+      showToast('Restore failed: ' + (res?.error || 'Unknown error'), 'error');
+    }
+  } catch (err) {
+    console.error('Restore error:', err);
+    showToast('Failed to restore snapshot: ' + (err?.message || err), 'error');
+  }
+}
+
+function promptRepairDatabase() {
+  if (repairModal) {
+    repairModal.style.display = 'flex';
+    if (btnProceedRepair) {
+      controllerNav.applyFocus(btnProceedRepair);
+    }
+  }
+}
+
+async function executeRepairDatabase() {
+  try {
+    showToast('Repairing Xbox database and clearing locks...', 'info', 2500);
+    const res = await window.api.repairXboxDatabase();
+    if (res && res.success) {
+      showToast('Xbox App database repaired! Clean manifest initialized.');
+      await triggerScan();
+      await loadBackups();
+    } else {
+      showToast('Repair failed: ' + (res?.error || 'Unknown error'), 'error');
+    }
+  } catch (err) {
+    console.error('Repair error:', err);
+    showToast('Failed to repair database: ' + (err?.message || err), 'error');
   }
 }
 
@@ -991,18 +1240,27 @@ function promptUninjectGame(appId, title) {
   if (uninjectTitleName) uninjectTitleName.textContent = pendingUninjectTitle;
   if (uninjectModal) {
     uninjectModal.style.display = 'flex';
-    if (btnProceedUninject) btnProceedUninject.focus();
+    if (btnProceedUninject) {
+      controllerNav.applyFocus(btnProceedUninject);
+    }
   }
 }
 
 async function executeUninject(appId, title) {
   try {
-    const res = await window.api.uninjectGame(appId);
-    if (res.success) {
+    if (appState.processInfo && appState.processInfo.isRunning) {
+      await closeXboxApp();
+    }
+    const res = await window.api.uninjectGame(appId, title);
+    if (res && res.success) {
+      showToast(`Removed "${title}" from Xbox App.`);
       await triggerScan();
+    } else {
+      showToast('Uninject failed: ' + (res?.error || 'Unknown error'), 'error');
     }
   } catch (err) {
     console.error('Uninject error:', err);
+    showToast('Uninject error: ' + (err?.message || err), 'error');
   }
 }
 
@@ -1013,7 +1271,9 @@ function openConfirmModal(toSync) {
   }
   if (confirmModal) {
     confirmModal.style.display = 'flex';
-    if (btnProceedSync) btnProceedSync.focus();
+    if (btnProceedSync) {
+      controllerNav.applyFocus(btnProceedSync);
+    }
   }
 }
 
@@ -1031,11 +1291,15 @@ async function executeSync() {
     }
     const res = await window.api.syncGames(toSync);
     if (res.success) {
+      showToast(`Successfully synced ${toSync.length} title${toSync.length === 1 ? '' : 's'} to Xbox App!`);
       await triggerScan();
       switchSection('library');
+    } else {
+      showToast('Sync failed: ' + (res.error || 'Unknown error'), 'error');
     }
   } catch (err) {
     console.error('Sync error:', err);
+    showToast('Sync error: ' + (err?.message || err), 'error');
   } finally {
     appState.isSyncing = false;
     updateSyncHubSelectionUI();
@@ -1254,13 +1518,19 @@ const controllerNav = {
   getActiveContextElements() {
     // Check if any modal is open
     if (xboxRunningModal && xboxRunningModal.style.display === 'flex') {
-      return [btnKillXboxModal, btnDismissXboxRunning, btnCloseXboxRunning].filter(el => el && el.offsetParent !== null);
+      return [btnKillXboxModal, btnDismissXboxRunning].filter(el => el && el.offsetParent !== null);
     }
     if (confirmModal && confirmModal.style.display === 'flex') {
-      return [btnProceedSync, btnCancelSync, btnCloseConfirm].filter(el => el && el.offsetParent !== null);
+      return [btnProceedSync, btnCancelSync].filter(el => el && el.offsetParent !== null);
     }
     if (uninjectModal && uninjectModal.style.display === 'flex') {
-      return [btnProceedUninject, btnCancelUninject, btnCloseUninject].filter(el => el && el.offsetParent !== null);
+      return [btnProceedUninject, btnCancelUninject].filter(el => el && el.offsetParent !== null);
+    }
+    if (restoreModal && restoreModal.style.display === 'flex') {
+      return [btnProceedRestore, btnCancelRestore].filter(el => el && el.offsetParent !== null);
+    }
+    if (repairModal && repairModal.style.display === 'flex') {
+      return [btnProceedRepair, btnCancelRepair].filter(el => el && el.offsetParent !== null);
     }
 
     // Return elements according to current section
@@ -1283,11 +1553,13 @@ const controllerNav = {
       elements.push(...cards);
     } else if (appState.currentSection === 'backups') {
       if (btnCreateBackup) elements.push(btnCreateBackup);
+      if (btnRepairDatabase) elements.push(btnRepairDatabase);
       const restoreBtns = Array.from(backupsList.querySelectorAll('.btn-restore-item'));
       elements.push(...restoreBtns);
     } else if (appState.currentSection === 'settings') {
       if (btnSettingsAddFolder) elements.push(btnSettingsAddFolder);
       if (btnResetHidden) elements.push(btnResetHidden);
+      if (btnSettingsRepairDatabase) elements.push(btnSettingsRepairDatabase);
     }
 
     return elements.filter(el => el && el.offsetParent !== null);
@@ -1332,6 +1604,26 @@ const controllerNav = {
   },
 
   navigateDirection(dir) {
+    // If any modal is active, navigate between modal action buttons
+    const isModalOpen = (confirmModal && confirmModal.style.display === 'flex') ||
+                        (uninjectModal && uninjectModal.style.display === 'flex') ||
+                        (xboxRunningModal && xboxRunningModal.style.display === 'flex') ||
+                        (restoreModal && restoreModal.style.display === 'flex') ||
+                        (repairModal && repairModal.style.display === 'flex');
+    if (isModalOpen) {
+      const modalElements = this.getActiveContextElements();
+      if (modalElements.length > 0) {
+        const curIdx = modalElements.indexOf(this.focusedEl);
+        if (curIdx === -1) {
+          this.applyFocus(modalElements[0]);
+        } else {
+          const nextIdx = (curIdx + 1) % modalElements.length;
+          this.applyFocus(modalElements[nextIdx]);
+        }
+      }
+      return;
+    }
+
     const activePage = pages[appState.currentSection];
     const cards = activePage ? Array.from(activePage.querySelectorAll('.game-card')) : [];
 
@@ -1400,22 +1692,61 @@ const controllerNav = {
   },
 
   handleButtonA() {
+    if (confirmModal && confirmModal.style.display === 'flex') {
+      if (btnProceedSync) btnProceedSync.click();
+      return;
+    }
+    if (uninjectModal && uninjectModal.style.display === 'flex') {
+      if (btnProceedUninject) btnProceedUninject.click();
+      return;
+    }
+    if (xboxRunningModal && xboxRunningModal.style.display === 'flex') {
+      if (btnKillXboxModal) btnKillXboxModal.click();
+      return;
+    }
+    if (restoreModal && restoreModal.style.display === 'flex') {
+      if (btnProceedRestore) btnProceedRestore.click();
+      return;
+    }
+    if (repairModal && repairModal.style.display === 'flex') {
+      if (btnProceedRepair) btnProceedRepair.click();
+      return;
+    }
+
     if (!this.focusedEl) return;
     this.focusedEl.click();
   },
 
   handleButtonB() {
-    if (xboxRunningModal && xboxRunningModal.style.display === 'flex') {
-      xboxRunningModal.style.display = 'none';
-      return;
-    }
     if (confirmModal && confirmModal.style.display === 'flex') {
-      confirmModal.style.display = 'none';
+      if (btnCancelSync) btnCancelSync.click();
+      else confirmModal.style.display = 'none';
       return;
     }
     if (uninjectModal && uninjectModal.style.display === 'flex') {
-      uninjectModal.style.display = 'none';
-      pendingUninjectAppId = null;
+      if (btnCancelUninject) btnCancelUninject.click();
+      else {
+        uninjectModal.style.display = 'none';
+        pendingUninjectAppId = null;
+      }
+      return;
+    }
+    if (xboxRunningModal && xboxRunningModal.style.display === 'flex') {
+      if (btnDismissXboxRunning) btnDismissXboxRunning.click();
+      else xboxRunningModal.style.display = 'none';
+      return;
+    }
+    if (restoreModal && restoreModal.style.display === 'flex') {
+      if (btnCancelRestore) btnCancelRestore.click();
+      else {
+        restoreModal.style.display = 'none';
+        pendingRestorePath = null;
+      }
+      return;
+    }
+    if (repairModal && repairModal.style.display === 'flex') {
+      if (btnCancelRepair) btnCancelRepair.click();
+      else repairModal.style.display = 'none';
       return;
     }
 

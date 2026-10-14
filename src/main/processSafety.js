@@ -2,9 +2,12 @@ const { execSync } = require('child_process');
 
 const TARGET_PROCESS_NAMES = [
   'XboxPcApp',
-  'Microsoft.GamingApp',
-  'XboxGameBarWidgets',
-  'XboxAppServices'
+  'Microsoft.GamingApp'
+];
+
+const IGNORED_PROCESS_NAMES = [
+  'XboxPcAppFT',
+  'XboxPcAppFT.exe'
 ];
 
 /**
@@ -27,8 +30,17 @@ function checkXboxProcesses() {
       const match = line.match(/^"([^"]+)"/);
       if (match) {
         const imageName = match[1];
+        const lowerImage = imageName.toLowerCase();
+        const baseName = lowerImage.replace(/\.exe$/i, '');
+
+        // Explicitly ignore background fast-track tasks such as XboxPcAppFT.exe
+        if (lowerImage.includes('xboxpcappft') || IGNORED_PROCESS_NAMES.some(ign => ign.toLowerCase() === baseName || ign.toLowerCase() === lowerImage)) {
+          continue;
+        }
+
         for (const target of TARGET_PROCESS_NAMES) {
-          if (imageName.toLowerCase().startsWith(target.toLowerCase())) {
+          const targetLower = target.toLowerCase();
+          if (baseName === targetLower || lowerImage === `${targetLower}.exe`) {
             if (!running.some(r => r.name.toLowerCase() === imageName.toLowerCase())) {
               running.push({ name: imageName });
             }
@@ -73,5 +85,6 @@ function closeXboxProcesses() {
 module.exports = {
   checkXboxProcesses,
   closeXboxProcesses,
-  TARGET_PROCESS_NAMES
+  TARGET_PROCESS_NAMES,
+  IGNORED_PROCESS_NAMES
 };

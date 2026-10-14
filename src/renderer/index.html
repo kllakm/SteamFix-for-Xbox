@@ -202,14 +202,22 @@
               <h2 class="page-header-title">Safety Backups & Snapshots</h2>
               <p class="page-header-desc">Timestamped safety snapshots created before manifest injections. Restore or roll back with a single click.</p>
             </div>
-            <button class="console-btn btn-ghost" id="btnCreateBackup" title="Create a manual safety backup snapshot">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
-              </svg>
-              <span>Create Snapshot Now</span>
-            </button>
+            <div class="header-action-group">
+              <button class="console-btn btn-ghost" id="btnCreateBackup" title="Create a manual safety backup snapshot">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>Create Snapshot</span>
+              </button>
+              <button class="console-btn btn-danger" id="btnRepairDatabase" title="Reset Xbox manifest to factory clean state and repair crashing issues">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                </svg>
+                <span>Repair Xbox Database</span>
+              </button>
+            </div>
           </div>
 
           <div class="backups-page-card">
@@ -268,6 +276,14 @@
                   <strong>Xbox LocalState Directory</strong>
                   <p id="settingsXboxPath">Scanning package state...</p>
                 </div>
+              </div>
+
+              <div class="settings-action-row">
+                <div class="settings-row-info">
+                  <strong>Repair Xbox App Database</strong>
+                  <p>Restore Xbox App manifest to factory clean state and remove any corrupt rogue provider entries.</p>
+                </div>
+                <button class="console-btn btn-danger btn-sm" id="btnSettingsRepairDatabase">Repair Database</button>
               </div>
             </div>
 
@@ -384,8 +400,14 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="console-btn btn-ghost" id="btnCancelSync">Cancel</button>
-        <button class="console-btn btn-cta" id="btnProceedSync">Proceed with Injection</button>
+        <button class="console-btn btn-ghost" id="btnCancelSync">
+          <span class="btn-badge btn-b modal-controller-badge">B</span>
+          <span class="btn-text">Cancel</span>
+        </button>
+        <button class="console-btn btn-cta" id="btnProceedSync">
+          <span class="btn-badge btn-a modal-controller-badge">A</span>
+          <span class="btn-text">Proceed with Injection</span>
+        </button>
       </div>
     </div>
   </div>
@@ -417,8 +439,14 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="console-btn btn-ghost" id="btnCancelUninject">Cancel</button>
-        <button class="console-btn btn-danger" id="btnProceedUninject">Uninject Game</button>
+        <button class="console-btn btn-ghost" id="btnCancelUninject">
+          <span class="btn-badge btn-b modal-controller-badge">B</span>
+          <span class="btn-text">Cancel</span>
+        </button>
+        <button class="console-btn btn-danger" id="btnProceedUninject">
+          <span class="btn-badge btn-a modal-controller-badge">A</span>
+          <span class="btn-text">Uninject Game</span>
+        </button>
       </div>
     </div>
   </div>
@@ -447,11 +475,105 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="console-btn btn-ghost" id="btnDismissXboxRunning">Dismiss</button>
-        <button class="console-btn btn-danger" id="btnKillXboxModal">Close Xbox App</button>
+        <button class="console-btn btn-ghost" id="btnDismissXboxRunning">
+          <span class="btn-badge btn-b modal-controller-badge">B</span>
+          <span class="btn-text">Dismiss</span>
+        </button>
+        <button class="console-btn btn-danger" id="btnKillXboxModal">
+          <span class="btn-badge btn-a modal-controller-badge">A</span>
+          <span class="btn-text">Close Xbox App</span>
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Modal: Restore Backup Confirmation Dialog -->
+  <div class="modal-backdrop" id="restoreModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-icon-badge modal-badge-warn">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00A2FF" stroke-width="2.5">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+          </svg>
+        </div>
+        <div class="modal-title-group">
+          <h2 class="modal-title">Restore Safety Backup</h2>
+          <span class="modal-subtitle">Roll back Xbox App manifest to snapshot</span>
+        </div>
+        <button class="modal-close" id="btnCloseRestore">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text">Are you sure you want to restore <strong id="restoreSnapshotName">this snapshot</strong>? The Xbox App will be closed to release file locks, and your library will be restored.</p>
+        <div class="safety-box">
+          <svg class="safety-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#00E575" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <div>
+            <strong>Schema Verification</strong>
+            <p>All restored games will be verified and sanitized with native WinRT types to ensure Xbox App stability.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="console-btn btn-ghost" id="btnCancelRestore">
+          <span class="btn-badge btn-b modal-controller-badge">B</span>
+          <span class="btn-text">Cancel</span>
+        </button>
+        <button class="console-btn btn-cta" id="btnProceedRestore">
+          <span class="btn-badge btn-a modal-controller-badge">A</span>
+          <span class="btn-text">Restore Snapshot</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Repair Database Confirmation Dialog -->
+  <div class="modal-backdrop" id="repairModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-icon-badge modal-badge-warn">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2.5">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </div>
+        <div class="modal-title-group">
+          <h2 class="modal-title">Repair Xbox App Database</h2>
+          <span class="modal-subtitle">Resolve Xbox App crashes and restore clean library state</span>
+        </div>
+        <button class="modal-close" id="btnCloseRepair">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text">This will reset your Xbox App custom library manifest to a clean factory state and purge any corrupted files that prevent adding apps or cause the Xbox App to crash.</p>
+        <div class="safety-box">
+          <svg class="safety-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#00E575" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <div>
+            <strong>Automatic Safety Backup</strong>
+            <p>A timestamped snapshot of your current database will be saved before repairing.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="console-btn btn-ghost" id="btnCancelRepair">
+          <span class="btn-badge btn-b modal-controller-badge">B</span>
+          <span class="btn-text">Cancel</span>
+        </button>
+        <button class="console-btn btn-danger" id="btnProceedRepair">
+          <span class="btn-badge btn-a modal-controller-badge">A</span>
+          <span class="btn-text">Repair & Reset</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Container -->
+  <div class="console-toast-container" id="toastContainer"></div>
 
   <script src="app.js"></script>
 </body>
